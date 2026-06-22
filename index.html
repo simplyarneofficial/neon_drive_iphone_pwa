@@ -2,49 +2,1549 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEON DRIVE</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#020408">
+<title>NEON DRIVE OS</title>
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css">
-
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js');
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<script>if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js');}</script>
+<style>
+/* ===== NEON DRIVE OS v2 - CSS CORE ===== */
+:root {
+  --cyan: #00f5ff;
+  --magenta: #ff00e5;
+  --amber: #ffb300;
+  --green: #39ff14;
+  --blue-deep: #020408;
+  --panel-bg: rgba(0,10,20,0.72);
+  --border: rgba(0,245,255,0.18);
+  --border-hot: rgba(0,245,255,0.55);
+  --font-display: 'Orbitron', monospace;
+  --font-data: 'Share Tech Mono', monospace;
+  --font-ui: 'Rajdhani', sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
 }
-</script>
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+
+html,body{
+  width:100%;height:100%;overflow:hidden;
+  background:var(--blue-deep);
+  color:var(--cyan);
+  font-family:var(--font-ui);
+  touch-action:none;
+  -webkit-user-select:none;user-select:none;
+}
+
+/* ===== SPLASH SCREEN ===== */
+#splash{
+  position:fixed;inset:0;z-index:9999;
+  background:#000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity 0.8s ease;
+}
+#splash.hide{opacity:0;pointer-events:none;}
+.splash-logo{
+  font-family:var(--font-display);
+  font-size:clamp(28px,8vw,64px);
+  font-weight:900;
+  letter-spacing:0.15em;
+  background:linear-gradient(135deg,var(--cyan),var(--magenta));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:splashPulse 1.4s ease-in-out infinite;
+}
+.splash-sub{
+  font-family:var(--font-data);
+  font-size:clamp(10px,2.5vw,14px);
+  color:rgba(0,245,255,0.5);
+  letter-spacing:0.4em;
+  margin-top:12px;
+}
+.splash-bar{
+  width:200px;height:2px;
+  background:rgba(0,245,255,0.1);
+  border-radius:2px;
+  margin-top:40px;
+  overflow:hidden;
+}
+.splash-fill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,var(--cyan),var(--magenta));
+  border-radius:2px;
+  animation:splashLoad 2.2s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes splashLoad{to{width:100%;}}
+@keyframes splashPulse{0%,100%{opacity:1;}50%{opacity:0.7;}}
+
+/* ===== SCANLINE + BACKGROUND ===== */
+.scanlines{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);
+}
+.bg-grid{
+  position:fixed;inset:0;z-index:0;
+  background-image:
+    linear-gradient(rgba(0,245,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg,rgba(0,245,255,0.04) 1px, transparent 1px);
+  background-size:40px 40px;
+  animation:gridDrift 20s linear infinite;
+}
+@keyframes gridDrift{from{background-position:0 0;}to{background-position:0 40px;}}
+
+.bg-glow{
+  position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 30%,rgba(0,245,255,0.08),transparent),
+    radial-gradient(ellipse 50% 35% at 80% 70%,rgba(255,0,229,0.07),transparent);
+}
+
+/* ===== HUD WINDSHIELD OVERLAY ===== */
+.hud-frame{
+  position:fixed;inset:0;z-index:2;pointer-events:none;
+}
+.hud-corner{
+  position:absolute;width:60px;height:60px;
+  border-color:var(--cyan);border-style:solid;
+  opacity:0.35;
+}
+.hud-corner.tl{top:calc(var(--safe-top)+12px);left:12px;border-width:2px 0 0 2px;border-radius:4px 0 0 0;}
+.hud-corner.tr{top:calc(var(--safe-top)+12px);right:12px;border-width:2px 2px 0 0;border-radius:0 4px 0 0;}
+.hud-corner.bl{bottom:calc(var(--safe-bot)+12px);left:12px;border-width:0 0 2px 2px;border-radius:0 0 0 4px;}
+.hud-corner.br{bottom:calc(var(--safe-bot)+12px);right:12px;border-width:0 2px 2px 0;border-radius:0 0 4px 0;}
+
+/* ===== MAIN LAYOUT (PORTRAIT MOBILE-FIRST) ===== */
+#app{
+  position:relative;z-index:10;
+  display:flex;flex-direction:column;
+  height:100dvh;
+  padding:calc(var(--safe-top)+8px) 10px calc(var(--safe-bot)+8px);
+  gap:8px;
+}
+
+/* ===== TOP BAR ===== */
+#topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 12px;
+  background:var(--panel-bg);
+  border:1px solid var(--border);
+  border-radius:12px;
+  backdrop-filter:blur(20px);
+  flex-shrink:0;
+  height:44px;
+}
+.topbar-left{
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--font-data);font-size:11px;
+  color:rgba(0,245,255,0.6);
+}
+.status-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 8px var(--green);
+  animation:blink 2s step-end infinite;
+}
+@keyframes blink{50%{opacity:0;}}
+.brand{
+  font-family:var(--font-display);
+  font-size:13px;font-weight:700;
+  letter-spacing:0.12em;
+  background:linear-gradient(90deg,var(--cyan),var(--magenta));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.topbar-right{
+  display:flex;align-items:center;gap:14px;
+  font-family:var(--font-data);font-size:11px;
+  color:rgba(0,245,255,0.7);
+}
+#topbar-time{font-size:13px;font-weight:600;color:var(--cyan);}
+
+/* ===== CENTER ROW: TACHOMETER + SPEED ===== */
+#center-row{
+  display:flex;align-items:center;justify-content:space-around;
+  gap:8px;
+  flex-shrink:0;
+}
+
+/* ===== 3D TACHOMETER (WebGL Canvas) ===== */
+#tacho-wrap{
+  position:relative;
+  width:min(180px, 44vw);
+  height:min(180px, 44vw);
+  flex-shrink:0;
+}
+#tachoCanvas{width:100%;height:100%;border-radius:50%;}
+.tacho-center-label{
+  position:absolute;
+  inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  pointer-events:none;
+}
+.tacho-rpm{
+  font-family:var(--font-display);
+  font-size:clamp(16px,5vw,26px);
+  font-weight:700;
+  color:#fff;
+  text-shadow:0 0 12px var(--cyan);
+}
+.tacho-rpmunit{
+  font-family:var(--font-data);
+  font-size:9px;
+  color:rgba(0,245,255,0.6);
+  letter-spacing:0.2em;
+}
+
+/* ===== SPEEDOMETER CENTER ===== */
+.speed-center{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  flex:0 0 auto;
+}
+#speed-val{
+  font-family:var(--font-display);
+  font-size:clamp(52px,15vw,88px);
+  font-weight:900;
+  line-height:1;
+  color:#fff;
+  text-shadow:0 0 30px var(--cyan), 0 0 60px rgba(0,245,255,0.4);
+  transition:color 0.3s;
+}
+#speed-val.warn{color:var(--amber);text-shadow:0 0 30px var(--amber);}
+#speed-val.danger{color:var(--magenta);text-shadow:0 0 30px var(--magenta);}
+.speed-unit{
+  font-family:var(--font-data);
+  font-size:12px;letter-spacing:0.25em;
+  color:rgba(0,245,255,0.55);
+}
+.speed-extras{
+  display:flex;gap:14px;
+  font-family:var(--font-data);font-size:10px;
+  color:rgba(0,245,255,0.5);
+}
+.speed-extras span b{color:var(--cyan);}
+
+/* ===== COMPASS RING ===== */
+#compass-wrap{
+  width:min(180px,44vw);
+  height:min(180px,44vw);
+  flex-shrink:0;
+  position:relative;
+}
+#compassCanvas{width:100%;height:100%;}
+
+/* ===== PANELS ROW ===== */
+#panels-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  flex:1 1 auto;
+  min-height:0;
+  overflow:hidden;
+}
+
+.panel{
+  background:var(--panel-bg);
+  border:1px solid var(--border);
+  border-radius:14px;
+  backdrop-filter:blur(20px);
+  padding:10px 12px;
+  display:flex;flex-direction:column;
+  gap:6px;
+  overflow:hidden;
+  position:relative;
+  transition:border-color 0.3s;
+}
+.panel:hover,.panel.active{border-color:var(--border-hot);}
+.panel-title{
+  font-family:var(--font-display);
+  font-size:9px;font-weight:700;
+  letter-spacing:0.25em;
+  color:rgba(0,245,255,0.5);
+  border-bottom:1px solid var(--border);
+  padding-bottom:5px;
+  display:flex;align-items:center;gap:6px;
+}
+.panel-icon{font-size:12px;}
+.panel-body{flex:1;display:flex;flex-direction:column;gap:4px;overflow:hidden;}
+
+/* ===== MAP PANEL ===== */
+#map-panel{grid-column:span 2;}
+#map-container{
+  width:100%;
+  height:160px;
+  border-radius:8px;
+  overflow:hidden;
+  position:relative;
+  background:rgba(0,20,30,0.8);
+  flex-shrink:0;
+}
+#mapCanvas{width:100%;height:100%;}
+.map-hud-overlay{
+  position:absolute;inset:0;pointer-events:none;
+  border:1px solid rgba(0,245,255,0.15);
+  border-radius:8px;
+}
+.map-crosshair{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+}
+.map-crosshair::before,.map-crosshair::after{
+  content:'';position:absolute;background:var(--cyan);opacity:0.6;
+}
+.map-crosshair::before{width:20px;height:1px;top:0;left:-10px;}
+.map-crosshair::after{width:1px;height:20px;top:-10px;left:0;}
+.map-coords{
+  position:absolute;bottom:6px;right:8px;
+  font-family:var(--font-data);font-size:9px;
+  color:rgba(0,245,255,0.5);
+}
+.map-speed-hud{
+  position:absolute;top:6px;left:8px;
+  font-family:var(--font-display);font-size:11px;font-weight:700;
+  color:var(--cyan);
+  text-shadow:0 0 8px var(--cyan);
+}
+.map-heading-hud{
+  position:absolute;top:6px;right:8px;
+  font-family:var(--font-data);font-size:10px;
+  color:var(--amber);
+}
+
+/* ===== SPOTIFY PANEL ===== */
+#spotify-panel .panel-body{align-items:center;}
+.spotify-track{
+  font-family:var(--font-ui);font-size:11px;font-weight:600;
+  color:#fff;text-align:center;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  width:100%;
+}
+.spotify-artist{
+  font-family:var(--font-data);font-size:9px;
+  color:rgba(255,255,255,0.4);text-align:center;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;
+}
+.spotify-progress{
+  width:100%;height:2px;background:rgba(255,255,255,0.1);border-radius:2px;
+  margin:4px 0;
+}
+.spotify-bar{height:100%;background:linear-gradient(90deg,#1db954,var(--green));border-radius:2px;width:30%;transition:width 0.5s;}
+.spotify-controls{
+  display:flex;gap:12px;align-items:center;
+}
+.sp-btn{
+  background:none;border:1px solid var(--border);color:var(--cyan);
+  border-radius:8px;padding:5px 10px;font-size:13px;cursor:pointer;
+  transition:all 0.2s;
+  font-family:var(--font-ui);
+}
+.sp-btn:active{transform:scale(0.9);border-color:var(--cyan);}
+#sp-login{
+  background:linear-gradient(135deg,#1db954,#18a447);
+  border:none;color:#000;font-weight:700;
+  font-family:var(--font-ui);font-size:10px;letter-spacing:0.1em;
+  padding:6px 12px;border-radius:8px;cursor:pointer;
+  width:100%;
+}
+.vol-row{display:flex;align-items:center;gap:6px;width:100%;}
+.vol-row input{flex:1;-webkit-appearance:none;height:2px;border-radius:2px;background:var(--border);cursor:pointer;}
+.vol-row input::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--cyan);cursor:pointer;}
+.vol-icon{font-size:11px;color:rgba(0,245,255,0.5);}
+
+/* ===== AI ASSISTANT PANEL ===== */
+#ai-panel{
+  position:relative;
+  overflow:hidden;
+}
+.ai-wave{
+  position:absolute;bottom:0;left:0;right:0;height:30px;
+  display:flex;align-items:flex-end;justify-content:center;gap:2px;
+  padding:0 8px 4px;
+  opacity:0;
+  transition:opacity 0.3s;
+}
+.ai-wave.active{opacity:1;}
+.wave-bar{
+  width:3px;border-radius:2px;
+  background:linear-gradient(to top,var(--magenta),var(--cyan));
+  animation:waveAnim 0.6s ease-in-out infinite;
+  min-height:3px;
+}
+@keyframes waveAnim{0%,100%{height:4px;}50%{height:20px;}}
+.ai-status{
+  font-family:var(--font-data);font-size:9px;
+  color:rgba(0,245,255,0.4);
+  text-align:center;
+}
+.ai-response{
+  font-family:var(--font-ui);font-size:10px;font-weight:500;
+  color:rgba(255,255,255,0.8);
+  line-height:1.4;
+  text-align:center;
+  min-height:28px;
+}
+#mic-btn{
+  background:rgba(255,0,229,0.12);
+  border:1px solid rgba(255,0,229,0.4);
+  color:var(--magenta);
+  border-radius:50%;width:36px;height:36px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;cursor:pointer;
+  margin:0 auto;
+  transition:all 0.3s;
+  flex-shrink:0;
+}
+#mic-btn.listening{
+  background:rgba(255,0,229,0.3);
+  border-color:var(--magenta);
+  box-shadow:0 0 20px rgba(255,0,229,0.5);
+  animation:micPulse 1s ease-in-out infinite;
+}
+@keyframes micPulse{50%{transform:scale(1.15);}}
+
+/* ===== DRIVE STATS PANEL ===== */
+.stat-row{
+  display:flex;justify-content:space-between;align-items:center;
+}
+.stat-label{
+  font-family:var(--font-data);font-size:9px;
+  color:rgba(0,245,255,0.45);
+  letter-spacing:0.1em;
+}
+.stat-val{
+  font-family:var(--font-display);font-size:11px;font-weight:700;
+  color:var(--cyan);
+}
+.stat-bar{
+  width:100%;height:3px;
+  background:rgba(255,255,255,0.06);
+  border-radius:3px;margin-top:1px;
+}
+.stat-fill{
+  height:100%;border-radius:3px;
+  background:linear-gradient(90deg,var(--cyan),var(--magenta));
+  transition:width 0.4s ease;
+}
+.stat-fill.amber{background:linear-gradient(90deg,var(--amber),#ff6b00);}
+.stat-fill.danger{background:linear-gradient(90deg,#ff3b3b,var(--magenta));}
+.drive-score{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:4px;
+  background:rgba(0,245,255,0.04);
+  border-radius:8px;border:1px solid var(--border);
+  margin-top:2px;
+}
+.drive-score-num{
+  font-family:var(--font-display);font-size:18px;font-weight:900;
+  background:linear-gradient(135deg,var(--green),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.drive-score-label{font-family:var(--font-data);font-size:9px;color:rgba(0,245,255,0.4);}
+
+/* ===== SYSTEM PANEL ===== */
+.sys-item{
+  display:flex;justify-content:space-between;
+  font-family:var(--font-data);font-size:10px;
+}
+.sys-key{color:rgba(0,245,255,0.45);}
+.sys-val{color:var(--cyan);font-weight:600;}
+.sys-val.ok{color:var(--green);}
+.sys-val.warn{color:var(--amber);}
+
+/* ===== MULTIPLAYER PANEL ===== */
+.mp-player{
+  display:flex;align-items:center;gap:8px;padding:3px 0;
+}
+.mp-avatar{
+  width:22px;height:22px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;color:#000;
+  flex-shrink:0;
+}
+.mp-info{flex:1;min-width:0;}
+.mp-name{font-family:var(--font-ui);font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mp-stat{font-family:var(--font-data);font-size:8px;color:rgba(255,255,255,0.4);}
+.mp-badge{
+  font-family:var(--font-display);font-size:9px;font-weight:700;
+  padding:1px 5px;border-radius:4px;
+  flex-shrink:0;
+}
+
+/* ===== BOTTOM NAV ===== */
+#bottom-nav{
+  display:flex;justify-content:space-around;align-items:center;
+  background:var(--panel-bg);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:8px 4px;
+  backdrop-filter:blur(20px);
+  flex-shrink:0;
+  height:52px;
+}
+.nav-btn{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  background:none;border:none;color:rgba(0,245,255,0.35);
+  cursor:pointer;flex:1;padding:2px;
+  transition:color 0.2s;
+  font-family:var(--font-ui);
+}
+.nav-btn span:first-child{font-size:18px;}
+.nav-btn span:last-child{font-size:8px;letter-spacing:0.1em;}
+.nav-btn.active,.nav-btn:active{color:var(--cyan);}
+.nav-btn.active span:first-child{
+  filter:drop-shadow(0 0 6px var(--cyan));
+}
+
+/* ===== HUD OVERLAY (WINDSHIELD MODE) ===== */
+#hud-overlay{
+  position:fixed;inset:0;z-index:900;
+  display:none;
+  flex-direction:column;justify-content:space-between;
+  padding:24px 20px;
+  background:linear-gradient(160deg,rgba(0,5,15,0.75) 0%,rgba(0,0,0,0.45) 100%);
+  backdrop-filter:blur(2px);
+}
+#hud-overlay.show{display:flex;}
+.hud-top-row{
+  display:flex;justify-content:space-between;align-items:flex-start;
+}
+.hud-speed-big{
+  font-family:var(--font-display);
+  font-size:clamp(60px,18vw,100px);font-weight:900;
+  color:rgba(255,255,255,0.95);
+  text-shadow:0 0 40px var(--cyan);
+  line-height:1;
+}
+.hud-speed-unit-big{
+  font-family:var(--font-data);font-size:14px;
+  color:rgba(0,245,255,0.6);letter-spacing:0.3em;
+}
+.hud-nav-arrow{
+  font-size:60px;color:rgba(0,245,255,0.7);
+  text-shadow:0 0 20px var(--cyan);
+  animation:arrowPulse 2s ease-in-out infinite;
+}
+@keyframes arrowPulse{50%{opacity:0.5;}}
+.hud-mid{
+  display:flex;justify-content:center;
+  font-family:var(--font-display);font-size:14px;
+  color:rgba(0,245,255,0.4);letter-spacing:0.3em;
+}
+.hud-bottom-row{
+  display:flex;justify-content:space-between;align-items:flex-end;
+}
+.hud-info-block{
+  font-family:var(--font-data);font-size:11px;
+  color:rgba(0,245,255,0.55);
+  line-height:1.8;
+}
+.hud-close-btn{
+  position:absolute;top:16px;right:16px;
+  background:rgba(255,0,229,0.15);border:1px solid rgba(255,0,229,0.4);
+  color:var(--magenta);border-radius:50%;
+  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  font-size:16px;cursor:pointer;
+}
+
+/* ===== MODAL ===== */
+#modal-overlay{
+  position:fixed;inset:0;z-index:800;
+  background:rgba(0,0,0,0.75);
+  display:none;align-items:flex-end;
+  backdrop-filter:blur(4px);
+}
+#modal-overlay.show{display:flex;}
+#modal-sheet{
+  width:100%;max-height:80vh;
+  background:rgba(2,8,20,0.97);
+  border-top:1px solid var(--border);
+  border-radius:20px 20px 0 0;
+  padding:20px;
+  overflow-y:auto;
+}
+.modal-handle{
+  width:36px;height:3px;background:rgba(255,255,255,0.2);
+  border-radius:2px;margin:0 auto 16px;
+}
+.modal-title{
+  font-family:var(--font-display);font-size:14px;font-weight:700;
+  letter-spacing:0.15em;color:var(--cyan);
+  margin-bottom:16px;
+}
+
+/* ===== TOAST ===== */
+#toast{
+  position:fixed;top:calc(var(--safe-top)+56px);left:50%;
+  transform:translateX(-50%) translateY(-10px);
+  background:rgba(0,20,30,0.95);
+  border:1px solid var(--border-hot);
+  border-radius:10px;padding:8px 16px;
+  font-family:var(--font-data);font-size:11px;color:var(--cyan);
+  white-space:nowrap;
+  opacity:0;transition:all 0.3s;
+  z-index:9000;pointer-events:none;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ===== PAGES ===== */
+.page{display:none;flex:1;flex-direction:column;gap:8px;min-height:0;overflow-y:auto;}
+.page.active{display:flex;}
+
+/* ===== RESPONSIVE LANDSCAPE ===== */
+@media(orientation:landscape){
+  #app{flex-direction:row;flex-wrap:wrap;}
+  #topbar{width:100%;order:0;}
+  #center-row{order:1;flex:0 0 auto;}
+  #panels-row{order:2;flex:1;grid-template-columns:1fr 1fr 1fr;}
+  #map-panel{grid-column:span 1;}
+  #bottom-nav{width:100%;order:3;}
+}
+</style>
 </head>
-
 <body>
-<div class="bg"></div>
 
-<div class="grid">
-
-  <div class="panel">
-    <div class="title">SYSTEM</div>
-    <div class="item">GPS: <span id="gps">aktiv</span></div>
-    <div class="item">Akku: <span id="battery">--</span></div>
-    <div class="item">Kompass: <span id="compass">--</span></div>
-  </div>
-
-  <div class="center">
-    <div class="ring">
-      <div id="speed">0</div>
-      <div class="unit">km/h</div>
-    </div>
-
-    <div id="time"></div>
-    <div id="date"></div>
-  </div>
-
-  <div class="panel">
-    <div class="title">STATUS</div>
-    <div class="item">Online Dashboard</div>
-    <div class="item">Neon Drive OS</div>
-  </div>
-
+<!-- Splash Screen -->
+<div id="splash">
+  <div class="splash-logo">NEON DRIVE OS</div>
+  <div class="splash-sub">INITIALIZING SYSTEMS</div>
+  <div class="splash-bar"><div class="splash-fill"></div></div>
 </div>
 
-<script src="app.js"></script>
+<!-- Background -->
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="scanlines"></div>
+
+<!-- HUD Frame Corners -->
+<div class="hud-frame">
+  <div class="hud-corner tl"></div>
+  <div class="hud-corner tr"></div>
+  <div class="hud-corner bl"></div>
+  <div class="hud-corner br"></div>
+</div>
+
+<!-- HUD Windshield Overlay -->
+<div id="hud-overlay">
+  <div class="hud-top-row">
+    <div>
+      <div class="hud-speed-big" id="hud-speed">0</div>
+      <div class="hud-speed-unit-big">KM/H</div>
+    </div>
+    <div class="hud-nav-arrow" id="hud-arrow">↑</div>
+  </div>
+  <div class="hud-mid" id="hud-street">NEON DRIVE OS — HUD AKTIV</div>
+  <div class="hud-bottom-row">
+    <div class="hud-info-block">
+      <div>Zeit: <span id="hud-time">—</span></div>
+      <div>Höhe: <span id="hud-alt">—</span> m</div>
+    </div>
+    <div class="hud-info-block" style="text-align:right">
+      <div>Kurs: <span id="hud-heading">—</span>°</div>
+      <div>Stil: <span id="hud-style">—</span></div>
+    </div>
+  </div>
+  <button class="hud-close-btn" onclick="toggleHUD()">✕</button>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Modal -->
+<div id="modal-overlay" onclick="closeModal()">
+  <div id="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">INFO</div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+
+  <!-- Top Bar -->
+  <div id="topbar">
+    <div class="topbar-left">
+      <div class="status-dot"></div>
+      <span class="brand">NEON DRIVE OS</span>
+      <span>v2.0</span>
+    </div>
+    <div class="topbar-right">
+      <span id="topbar-battery">🔋—</span>
+      <span id="topbar-gps" style="color:rgba(0,245,255,0.35)">📡—</span>
+      <span id="topbar-time">--:--</span>
+    </div>
+  </div>
+
+  <!-- PAGE: DASHBOARD -->
+  <div class="page active" id="page-dash">
+    
+    <!-- Center Row: Tacho + Speed + Compass -->
+    <div id="center-row">
+      <!-- 3D Tachometer -->
+      <div id="tacho-wrap">
+        <canvas id="tachoCanvas"></canvas>
+        <div class="tacho-center-label">
+          <div class="tacho-rpm" id="rpm-val">0</div>
+          <div class="tacho-rpmunit">RPM</div>
+        </div>
+      </div>
+
+      <!-- Speed Center -->
+      <div class="speed-center">
+        <div id="speed-val">0</div>
+        <div class="speed-unit">KM/H</div>
+        <div class="speed-extras">
+          <span>MAX: <b id="max-speed">0</b></span>
+          <span>AVG: <b id="avg-speed">0</b></span>
+        </div>
+      </div>
+
+      <!-- Compass -->
+      <div id="compass-wrap">
+        <canvas id="compassCanvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Panels Row -->
+    <div id="panels-row">
+
+      <!-- MAP PANEL -->
+      <div class="panel" id="map-panel">
+        <div class="panel-title"><span class="panel-icon">🗺</span> NAVIGATION</div>
+        <div class="panel-body">
+          <div id="map-container">
+            <canvas id="mapCanvas"></canvas>
+            <div class="map-hud-overlay">
+              <div class="map-crosshair"></div>
+              <div class="map-speed-hud"><span id="map-spd">0</span> <small>km/h</small></div>
+              <div class="map-heading-hud">HDG <span id="map-hdg">—</span>°</div>
+              <div class="map-coords" id="map-coords">GPS wird geladen…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPOTIFY PANEL -->
+      <div class="panel" id="spotify-panel">
+        <div class="panel-title"><span class="panel-icon">🎵</span> MUSIK</div>
+        <div class="panel-body" id="sp-body">
+          <button id="sp-login" onclick="spotifyLogin()">MIT SPOTIFY VERBINDEN</button>
+        </div>
+      </div>
+
+      <!-- AI ASSISTANT PANEL -->
+      <div class="panel" id="ai-panel">
+        <div class="panel-title"><span class="panel-icon">🤖</span> HEY DRIVE</div>
+        <div class="panel-body">
+          <div class="ai-response" id="ai-response">Sag "Hey Drive" oder tippe auf das Mic…</div>
+          <button id="mic-btn" onclick="toggleMic()">🎙</button>
+          <div class="ai-status" id="ai-status">BEREIT</div>
+        </div>
+        <div class="ai-wave" id="ai-wave">
+          <div class="wave-bar" style="animation-delay:0s"></div>
+          <div class="wave-bar" style="animation-delay:.08s"></div>
+          <div class="wave-bar" style="animation-delay:.16s"></div>
+          <div class="wave-bar" style="animation-delay:.24s"></div>
+          <div class="wave-bar" style="animation-delay:.32s"></div>
+          <div class="wave-bar" style="animation-delay:.4s"></div>
+          <div class="wave-bar" style="animation-delay:.48s"></div>
+        </div>
+      </div>
+
+      <!-- DRIVE STATS PANEL -->
+      <div class="panel" id="stats-panel">
+        <div class="panel-title"><span class="panel-icon">📊</span> FAHRSTIL</div>
+        <div class="panel-body">
+          <div class="stat-row"><span class="stat-label">BESCHLEUNIGUNG</span><span class="stat-val" id="accel-val">0.0g</span></div>
+          <div class="stat-bar"><div class="stat-fill" id="accel-bar" style="width:0%"></div></div>
+          <div class="stat-row"><span class="stat-label">BREMSUNG</span><span class="stat-val" id="brake-val">0.0g</span></div>
+          <div class="stat-bar"><div class="stat-fill amber" id="brake-bar" style="width:0%"></div></div>
+          <div class="stat-row"><span class="stat-label">KURVE</span><span class="stat-val" id="lat-val">0.0g</span></div>
+          <div class="stat-bar"><div class="stat-fill danger" id="lat-bar" style="width:0%"></div></div>
+          <div class="drive-score">
+            <div>
+              <div class="drive-score-num" id="drive-score">100</div>
+              <div class="drive-score-label">FAHRSCORE</div>
+            </div>
+            <div style="font-family:var(--font-data);font-size:8px;color:rgba(0,245,255,0.35);line-height:1.6">
+              <div>TRIPS: <span id="trip-count" style="color:var(--cyan)">0</span></div>
+              <div>DIST: <span id="trip-dist" style="color:var(--cyan)">0.0</span>km</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end panels-row -->
+  </div><!-- end page-dash -->
+
+  <!-- PAGE: SYSTEM -->
+  <div class="page" id="page-sys">
+    <div class="panel" style="flex:0 0 auto">
+      <div class="panel-title"><span class="panel-icon">⚙️</span> SYSTEM</div>
+      <div class="panel-body">
+        <div class="sys-item"><span class="sys-key">GPS STATUS</span><span class="sys-val ok" id="sys-gps">AKTIV</span></div>
+        <div class="sys-item"><span class="sys-key">AKKU</span><span class="sys-val" id="sys-batt">—</span></div>
+        <div class="sys-item"><span class="sys-key">KOMPASS</span><span class="sys-val" id="sys-comp">—</span></div>
+        <div class="sys-item"><span class="sys-key">HÖHE</span><span class="sys-val" id="sys-alt">—</span></div>
+        <div class="sys-item"><span class="sys-key">GENAUIGKEIT</span><span class="sys-val" id="sys-acc">—</span></div>
+        <div class="sys-item"><span class="sys-key">PLATTFORM</span><span class="sys-val">NEON OS 2.0</span></div>
+        <div class="sys-item"><span class="sys-key">PWA MODUS</span><span class="sys-val ok" id="sys-pwa">CHECK…</span></div>
+      </div>
+    </div>
+    <div class="panel" style="flex:0 0 auto">
+      <div class="panel-title"><span class="panel-icon">🏁</span> SITZUNG</div>
+      <div class="panel-body">
+        <div class="sys-item"><span class="sys-key">MAX SPEED</span><span class="sys-val" id="s-maxspd">0 km/h</span></div>
+        <div class="sys-item"><span class="sys-key">DISTANZ</span><span class="sys-val" id="s-dist">0.0 km</span></div>
+        <div class="sys-item"><span class="sys-key">FAHRZEIT</span><span class="sys-val" id="s-time">00:00</span></div>
+        <div class="sys-item"><span class="sys-key">FAHRSCORE</span><span class="sys-val" id="s-score">100</span></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="sp-btn" style="flex:1;padding:10px" onclick="toggleHUD()">🔲 HUD MODUS</button>
+      <button class="sp-btn" style="flex:1;padding:10px" onclick="resetSession()">🔄 RESET</button>
+    </div>
+  </div><!-- end page-sys -->
+
+  <!-- PAGE: MULTIPLAYER -->
+  <div class="page" id="page-mp">
+    <div class="panel">
+      <div class="panel-title"><span class="panel-icon">🌐</span> MULTIPLAYER LIVE</div>
+      <div class="panel-body" id="mp-list"></div>
+    </div>
+    <div class="panel" style="flex:0 0 auto">
+      <div class="panel-title"><span class="panel-icon">📡</span> LOBBY</div>
+      <div class="panel-body">
+        <div class="sys-item"><span class="sys-key">SPIELER ONLINE</span><span class="sys-val" id="mp-count">4</span></div>
+        <div class="sys-item"><span class="sys-key">DEINE POSITION</span><span class="sys-val" id="mp-rank">#1</span></div>
+      </div>
+    </div>
+  </div><!-- end page-mp -->
+
+  <!-- Bottom Nav -->
+  <div id="bottom-nav">
+    <button class="nav-btn active" onclick="showPage('dash',this)">
+      <span>🚀</span><span>DRIVE</span>
+    </button>
+    <button class="nav-btn" onclick="showPage('sys',this)">
+      <span>⚙️</span><span>SYSTEM</span>
+    </button>
+    <button class="nav-btn" onclick="toggleHUD()">
+      <span>🔲</span><span>HUD</span>
+    </button>
+    <button class="nav-btn" onclick="showPage('mp',this)">
+      <span>🌐</span><span>MULTI</span>
+    </button>
+  </div>
+
+</div><!-- end #app -->
+
+<script>
+/* ============================================================
+   NEON DRIVE OS v2 — MAIN APPLICATION
+   ============================================================ */
+
+// ---- SPLASH SCREEN ----
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('hide');
+    setTimeout(() => document.getElementById('splash').remove(), 900);
+    showToast('NEON DRIVE OS GESTARTET');
+  }, 2400);
+});
+
+// ---- TOAST ----
+function showToast(msg, dur = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ---- PAGE NAVIGATION ----
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ---- MODAL ----
+function openModal(title, html) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+// ---- TIME ----
+function updateTime() {
+  const d = new Date();
+  const t = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('topbar-time').textContent = t;
+  document.getElementById('hud-time').textContent = t;
+  const se = document.getElementById('s-time');
+  if (se && sessionStartTime) {
+    const s = Math.floor((Date.now() - sessionStartTime) / 1000);
+    se.textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  }
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+// ---- SESSION DATA ----
+let sessionStartTime = Date.now();
+let maxSpeed = 0, totalDist = 0, speedSamples = [], lastPos = null, driveScore = 100;
+let tripCount = parseInt(localStorage.getItem('nd_trips') || '0');
+document.getElementById('trip-count').textContent = tripCount;
+
+function resetSession() {
+  sessionStartTime = Date.now();
+  maxSpeed = 0; totalDist = 0; speedSamples = []; lastPos = null; driveScore = 100;
+  tripCount++;
+  localStorage.setItem('nd_trips', tripCount);
+  document.getElementById('trip-count').textContent = tripCount;
+  document.getElementById('max-speed').textContent = 0;
+  document.getElementById('avg-speed').textContent = 0;
+  showToast('SESSION ZURÜCKGESETZT');
+}
+
+// ---- BATTERY ----
+if (navigator.getBattery) {
+  navigator.getBattery().then(b => {
+    function upBatt() {
+      const pct = Math.round(b.level * 100);
+      const icon = b.charging ? '⚡' : pct < 20 ? '🪫' : '🔋';
+      document.getElementById('topbar-battery').textContent = icon + pct + '%';
+      document.getElementById('sys-batt').textContent = pct + '% ' + (b.charging ? '(lädt)' : '');
+      document.getElementById('sys-batt').className = 'sys-val ' + (pct > 30 ? 'ok' : 'warn');
+    }
+    upBatt();
+    b.addEventListener('levelchange', upBatt);
+    b.addEventListener('chargingchange', upBatt);
+  });
+}
+
+// ---- PWA CHECK ----
+document.getElementById('sys-pwa').textContent =
+  (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) ? 'JA ✓' : 'BROWSER';
+
+// ---- COMPASS (DeviceOrientation) ----
+let heading = 0;
+const DIRECTIONS = ['N','NO','O','SO','S','SW','W','NW'];
+function getDir(deg) { return DIRECTIONS[Math.round(deg/45) % 8]; }
+
+window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+window.addEventListener('deviceorientation', handleOrientation, true);
+function handleOrientation(e) {
+  if (e.alpha == null) return;
+  heading = Math.round(e.alpha);
+  const compass = 360 - heading;
+  document.getElementById('sys-comp').textContent = compass + '° ' + getDir(compass);
+  document.getElementById('map-hdg').textContent = compass;
+  document.getElementById('hud-heading').textContent = compass;
+  drawCompass(compass);
+}
+
+// ---- ACCELEROMETER / DRIVE STYLE ----
+let ax = 0, ay = 0, az = 0, prevAy = 0;
+window.addEventListener('devicemotion', e => {
+  const a = e.accelerationIncludingGravity;
+  if (!a) return;
+  ax = a.x || 0; ay = a.y || 0; az = a.z || 0;
+  const g = 9.81;
+  const accelG = Math.max(0, (ay - prevAy) / (g * 0.1));
+  const brakeG = Math.max(0, (prevAy - ay) / (g * 0.1));
+  const latG = Math.abs(ax) / g;
+  prevAy = ay;
+
+  const aG = Math.min(accelG, 2);
+  const bG = Math.min(brakeG, 2);
+  const lG = Math.min(latG, 1.5);
+
+  document.getElementById('accel-val').textContent = aG.toFixed(1) + 'g';
+  document.getElementById('brake-val').textContent = bG.toFixed(1) + 'g';
+  document.getElementById('lat-val').textContent = lG.toFixed(1) + 'g';
+  document.getElementById('accel-bar').style.width = (aG / 2 * 100) + '%';
+  document.getElementById('brake-bar').style.width = (bG / 2 * 100) + '%';
+  document.getElementById('lat-bar').style.width = (lG / 1.5 * 100) + '%';
+
+  // Update drive score
+  const penalty = aG * 0.5 + bG * 0.8 + lG * 0.6;
+  driveScore = Math.max(0, Math.min(100, driveScore - penalty * 0.02));
+  const scoreEl = document.getElementById('drive-score');
+  scoreEl.textContent = Math.round(driveScore);
+  document.getElementById('s-score').textContent = Math.round(driveScore);
+  scoreEl.style.background = driveScore > 70 ? 'linear-gradient(135deg,#39ff14,#00f5ff)' :
+    driveScore > 40 ? 'linear-gradient(135deg,#ffb300,#ff6b00)' : 'linear-gradient(135deg,#ff3b3b,#ff00e5)';
+  scoreEl.style['-webkit-background-clip'] = 'text';
+  scoreEl.style['-webkit-text-fill-color'] = 'transparent';
+
+  document.getElementById('hud-style').textContent =
+    driveScore > 80 ? 'ECO' : driveScore > 60 ? 'NORMAL' : driveScore > 40 ? 'SPORT' : 'AGGRO';
+});
+
+// ---- GEOLOCATION ----
+let speedKmh = 0;
+if (navigator.geolocation) {
+  navigator.geolocation.watchPosition(pos => {
+    const { latitude, longitude, speed, altitude, accuracy } = pos.coords;
+    speedKmh = speed != null ? Math.round(speed * 3.6) : speedKmh;
+    
+    // Speed display
+    document.getElementById('speed-val').textContent = speedKmh;
+    document.getElementById('map-spd').textContent = speedKmh;
+    document.getElementById('hud-speed').textContent = speedKmh;
+    document.getElementById('rpm-val').textContent = Math.round(speedKmh * 40);
+    
+    // Color coding
+    const sv = document.getElementById('speed-val');
+    sv.className = speedKmh > 120 ? 'danger' : speedKmh > 80 ? 'warn' : '';
+    
+    // Max / Avg
+    if (speedKmh > maxSpeed) {
+      maxSpeed = speedKmh;
+      document.getElementById('max-speed').textContent = maxSpeed;
+      document.getElementById('s-maxspd').textContent = maxSpeed + ' km/h';
+    }
+    speedSamples.push(speedKmh);
+    if (speedSamples.length > 100) speedSamples.shift();
+    const avg = Math.round(speedSamples.reduce((a,b)=>a+b,0)/speedSamples.length);
+    document.getElementById('avg-speed').textContent = avg;
+    
+    // Distance
+    if (lastPos) {
+      const d = haversine(lastPos.lat, lastPos.lon, latitude, longitude);
+      totalDist += d;
+      document.getElementById('trip-dist').textContent = totalDist.toFixed(1);
+      document.getElementById('s-dist').textContent = totalDist.toFixed(2) + ' km';
+    }
+    lastPos = { lat: latitude, lon: longitude };
+    
+    // GPS info
+    document.getElementById('topbar-gps').textContent = '📡GPS';
+    document.getElementById('topbar-gps').style.color = 'var(--green)';
+    document.getElementById('sys-gps').textContent = 'AKTIV ✓';
+    document.getElementById('sys-alt').textContent = altitude ? Math.round(altitude) + ' m' : '—';
+    document.getElementById('sys-acc').textContent = accuracy ? Math.round(accuracy) + ' m' : '—';
+    document.getElementById('hud-alt').textContent = altitude ? Math.round(altitude) : '—';
+    document.getElementById('map-coords').textContent =
+      latitude.toFixed(4) + '°N  ' + longitude.toFixed(4) + '°E';
+    
+    // Map
+    drawMap(latitude, longitude);
+    drawTacho(speedKmh);
+  }, err => {
+    document.getElementById('sys-gps').textContent = 'FEHLER';
+    document.getElementById('map-coords').textContent = 'GPS verweigert – Demo-Modus';
+    simulateDriving();
+  }, { enableHighAccuracy: true, maximumAge: 1000 });
+} else {
+  simulateDriving();
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ---- DEMO SIMULATION (no GPS) ----
+let simSpeed = 0, simRpm = 0, simDir = 45;
+function simulateDriving() {
+  setInterval(() => {
+    simSpeed = 40 + Math.round(Math.sin(Date.now()/8000)*35 + Math.random()*8);
+    simSpeed = Math.max(0, simSpeed);
+    simRpm = simSpeed * 38 + Math.random() * 200;
+    simDir = (simDir + 0.3) % 360;
+
+    document.getElementById('speed-val').textContent = simSpeed;
+    document.getElementById('map-spd').textContent = simSpeed;
+    document.getElementById('hud-speed').textContent = simSpeed;
+    document.getElementById('rpm-val').textContent = Math.round(simRpm);
+    document.getElementById('map-hdg').textContent = Math.round(simDir);
+    document.getElementById('hud-heading').textContent = Math.round(simDir);
+    drawTacho(simSpeed);
+    drawCompass(simDir);
+    
+    if (simSpeed > maxSpeed) {
+      maxSpeed = simSpeed;
+      document.getElementById('max-speed').textContent = maxSpeed;
+      document.getElementById('s-maxspd').textContent = maxSpeed + ' km/h';
+    }
+    speedSamples.push(simSpeed);
+    if (speedSamples.length > 100) speedSamples.shift();
+    const avg = Math.round(speedSamples.reduce((a,b)=>a+b,0)/speedSamples.length);
+    document.getElementById('avg-speed').textContent = avg;
+    
+    // Simulate map
+    drawMap(52.52 + Math.sin(Date.now()/20000)*0.01, 13.405 + Math.cos(Date.now()/20000)*0.01);
+  }, 500);
+  document.getElementById('map-coords').textContent = 'DEMO: Berlin 52.5200°N  13.4050°E';
+}
+
+// ============================================================
+// ---- 3D TACHOMETER (WebGL-like via Canvas 2D) ----
+// ============================================================
+const tachoCanvas = document.getElementById('tachoCanvas');
+const tctx = tachoCanvas.getContext('2d');
+
+function resizeTacho() {
+  const w = tachoCanvas.offsetWidth * window.devicePixelRatio;
+  tachoCanvas.width = w; tachoCanvas.height = w;
+}
+resizeTacho();
+window.addEventListener('resize', resizeTacho);
+
+function drawTacho(spd) {
+  const c = tachoCanvas, ctx = tctx;
+  const W = c.width, cx = W/2, cy = W/2, r = W*0.46;
+  ctx.clearRect(0, 0, W, W);
+
+  const maxSpeedVal = 200;
+  const ratio = Math.min(spd / maxSpeedVal, 1);
+  const startAngle = Math.PI * 0.75;
+  const endAngle = Math.PI * 2.25;
+  const currentAngle = startAngle + ratio * (endAngle - startAngle);
+
+  // Outer ring gradient glow
+  const grd = ctx.createRadialGradient(cx, cy, r*0.7, cx, cy, r);
+  grd.addColorStop(0, 'rgba(0,245,255,0)');
+  grd.addColorStop(1, 'rgba(0,245,255,0.12)');
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.fillStyle = grd; ctx.fill();
+
+  // Track background
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, startAngle, endAngle);
+  ctx.strokeStyle = 'rgba(0,245,255,0.1)';
+  ctx.lineWidth = W * 0.04;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // Colored arc
+  const arcGrd = ctx.createLinearGradient(cx-r, cy, cx+r, cy);
+  arcGrd.addColorStop(0, '#00f5ff');
+  arcGrd.addColorStop(0.7, '#9933ff');
+  arcGrd.addColorStop(1, '#ff00e5');
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, startAngle, currentAngle);
+  ctx.strokeStyle = arcGrd;
+  ctx.lineWidth = W * 0.04;
+  ctx.lineCap = 'round';
+  ctx.shadowColor = '#00f5ff';
+  ctx.shadowBlur = W * 0.04;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Tick marks
+  for (let i = 0; i <= 10; i++) {
+    const angle = startAngle + (i/10) * (endAngle - startAngle);
+    const isMajor = i % 2 === 0;
+    const r1 = r * (isMajor ? 0.82 : 0.88);
+    const r2 = r * 0.96;
+    ctx.beginPath();
+    ctx.moveTo(cx + r1*Math.cos(angle), cy + r1*Math.sin(angle));
+    ctx.lineTo(cx + r2*Math.cos(angle), cy + r2*Math.sin(angle));
+    ctx.strokeStyle = i <= ratio*10 ? 'rgba(0,245,255,0.9)' : 'rgba(0,245,255,0.2)';
+    ctx.lineWidth = isMajor ? W*0.018 : W*0.008;
+    ctx.stroke();
+  }
+
+  // Needle
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(currentAngle);
+  const nLen = r * 0.72;
+  const ng = ctx.createLinearGradient(0, 0, nLen, 0);
+  ng.addColorStop(0, 'rgba(255,255,255,0.1)');
+  ng.addColorStop(1, '#ffffff');
+  ctx.beginPath(); ctx.moveTo(-r*0.1, 0); ctx.lineTo(nLen, 0);
+  ctx.strokeStyle = ng;
+  ctx.lineWidth = W * 0.022;
+  ctx.lineCap = 'round';
+  ctx.shadowColor = '#fff'; ctx.shadowBlur = W*0.04;
+  ctx.stroke();
+  ctx.restore();
+
+  // Center dot
+  ctx.beginPath(); ctx.arc(cx, cy, W*0.05, 0, Math.PI*2);
+  const cdg = ctx.createRadialGradient(cx, cy, 0, cx, cy, W*0.05);
+  cdg.addColorStop(0, '#ffffff'); cdg.addColorStop(1, '#00f5ff');
+  ctx.fillStyle = cdg; ctx.fill();
+}
+drawTacho(0);
+
+// ============================================================
+// ---- COMPASS (Canvas) ----
+// ============================================================
+const compCanvas = document.getElementById('compassCanvas');
+const cctx = compCanvas.getContext('2d');
+
+function resizeCompass() {
+  const w = compCanvas.offsetWidth * window.devicePixelRatio;
+  compCanvas.width = w; compCanvas.height = w;
+}
+resizeCompass();
+window.addEventListener('resize', resizeCompass);
+
+function drawCompass(deg) {
+  const c = compCanvas, ctx = cctx;
+  const W = c.width, cx = W/2, cy = W/2, r = W*0.44;
+  ctx.clearRect(0, 0, W, W);
+  const rad = deg * Math.PI / 180;
+
+  // Outer ring
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(0,245,255,0.15)'; ctx.lineWidth = W*0.03; ctx.stroke();
+
+  // Cardinal labels
+  const cardinals = ['N','O','S','W'];
+  cardinals.forEach((label, i) => {
+    const a = (i * Math.PI/2) - rad;
+    const x = cx + (r*0.72)*Math.cos(a - Math.PI/2);
+    const y = cy + (r*0.72)*Math.sin(a - Math.PI/2);
+    ctx.fillStyle = label === 'N' ? '#ff3b3b' : 'rgba(0,245,255,0.65)';
+    ctx.font = `bold ${W*0.10}px 'Orbitron'`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.shadowColor = label === 'N' ? '#ff3b3b' : '#00f5ff';
+    ctx.shadowBlur = W*0.03;
+    ctx.fillText(label, x, y);
+    ctx.shadowBlur = 0;
+  });
+
+  // Tick marks
+  for (let i = 0; i < 36; i++) {
+    const a = (i * 10 * Math.PI/180) - rad;
+    const isMajor = i % 9 === 0;
+    const r1 = r * (isMajor ? 0.84 : 0.90);
+    ctx.beginPath();
+    ctx.moveTo(cx + r1*Math.cos(a - Math.PI/2), cy + r1*Math.sin(a - Math.PI/2));
+    ctx.lineTo(cx + r*Math.cos(a - Math.PI/2), cy + r*Math.sin(a - Math.PI/2));
+    ctx.strokeStyle = 'rgba(0,245,255,0.3)';
+    ctx.lineWidth = isMajor ? W*0.014 : W*0.006;
+    ctx.stroke();
+  }
+
+  // North needle
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + (r*0.5)*Math.cos(-Math.PI/2 - rad), cy + (r*0.5)*Math.sin(-Math.PI/2 - rad));
+  ctx.strokeStyle = '#ff3b3b'; ctx.lineWidth = W*0.025;
+  ctx.lineCap = 'round'; ctx.shadowColor = '#ff3b3b'; ctx.shadowBlur = W*0.04;
+  ctx.stroke(); ctx.shadowBlur = 0;
+
+  // South needle
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + (r*0.4)*Math.cos(Math.PI/2 - rad), cy + (r*0.4)*Math.sin(Math.PI/2 - rad));
+  ctx.strokeStyle = 'rgba(0,245,255,0.5)'; ctx.lineWidth = W*0.018;
+  ctx.lineCap = 'round'; ctx.stroke();
+
+  // Center
+  ctx.beginPath(); ctx.arc(cx, cy, W*0.04, 0, Math.PI*2);
+  ctx.fillStyle = '#fff'; ctx.fill();
+
+  // Degree text
+  ctx.fillStyle = 'rgba(0,245,255,0.7)';
+  ctx.font = `bold ${W*0.09}px 'Share Tech Mono'`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(Math.round(deg) + '°', cx, cy + r*0.35);
+}
+drawCompass(0);
+
+// ============================================================
+// ---- MAP (Canvas — Simulated HUD-Style) ----
+// ============================================================
+const mapCanvas = document.getElementById('mapCanvas');
+const mctx = mapCanvas.getContext('2d');
+let mapLat = 52.52, mapLon = 13.405, mapTrail = [];
+
+function resizeMap() {
+  mapCanvas.width = mapCanvas.offsetWidth;
+  mapCanvas.height = mapCanvas.offsetHeight;
+}
+resizeMap(); window.addEventListener('resize', resizeMap);
+
+function drawMap(lat, lon) {
+  mapLat = lat; mapLon = lon;
+  mapTrail.push([lat, lon]);
+  if (mapTrail.length > 80) mapTrail.shift();
+
+  const W = mapCanvas.width, H = mapCanvas.height;
+  mctx.clearRect(0, 0, W, H);
+
+  // Dark background
+  mctx.fillStyle = 'rgba(0,8,18,0.95)';
+  mctx.fillRect(0, 0, W, H);
+
+  // Grid
+  mctx.strokeStyle = 'rgba(0,245,255,0.06)';
+  mctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 30) {
+    mctx.beginPath(); mctx.moveTo(x, 0); mctx.lineTo(x, H); mctx.stroke();
+  }
+  for (let y = 0; y < H; y += 30) {
+    mctx.beginPath(); mctx.moveTo(0, y); mctx.lineTo(W, y); mctx.stroke();
+  }
+
+  if (mapTrail.length < 2) return;
+
+  // Coordinate to canvas projection
+  const scale = 8000;
+  const cx = W/2, cy = H/2;
+  const refLat = mapTrail[mapTrail.length-1][0];
+  const refLon = mapTrail[mapTrail.length-1][1];
+
+  function toXY(lt, ln) {
+    return [
+      cx + (ln - refLon) * scale * Math.cos(refLat * Math.PI/180),
+      cy - (lt - refLat) * scale
+    ];
+  }
+
+  // Trail with gradient
+  for (let i = 1; i < mapTrail.length; i++) {
+    const [x1, y1] = toXY(...mapTrail[i-1]);
+    const [x2, y2] = toXY(...mapTrail[i]);
+    const alpha = i / mapTrail.length;
+    mctx.beginPath();
+    mctx.moveTo(x1, y1); mctx.lineTo(x2, y2);
+    mctx.strokeStyle = `rgba(0,245,255,${alpha * 0.7})`;
+    mctx.lineWidth = 2;
+    mctx.stroke();
+  }
+
+  // Current position dot
+  const [px, py] = toXY(refLat, refLon);
+  const pGrd = mctx.createRadialGradient(px, py, 0, px, py, 12);
+  pGrd.addColorStop(0, 'rgba(0,245,255,0.6)');
+  pGrd.addColorStop(1, 'transparent');
+  mctx.fillStyle = pGrd;
+  mctx.beginPath(); mctx.arc(px, py, 12, 0, Math.PI*2); mctx.fill();
+  mctx.fillStyle = '#fff';
+  mctx.beginPath(); mctx.arc(px, py, 4, 0, Math.PI*2); mctx.fill();
+
+  // Heading arrow
+  const headRad = heading * Math.PI/180;
+  mctx.beginPath();
+  mctx.moveTo(px, py);
+  mctx.lineTo(px + Math.sin(headRad)*20, py - Math.cos(headRad)*20);
+  mctx.strokeStyle = 'rgba(255,179,0,0.8)';
+  mctx.lineWidth = 2; mctx.stroke();
+}
+
+// ============================================================
+// ---- SPOTIFY INTEGRATION ----
+// ============================================================
+const SP_CLIENT_ID = 'YOUR_SPOTIFY_CLIENT_ID';
+let spToken = null, spRefreshTimer = null;
+
+function spotifyLogin() {
+  // For demo / production: replace with real Spotify OAuth PKCE flow
+  const params = new URLSearchParams({
+    response_type: 'token',
+    client_id: SP_CLIENT_ID,
+    scope: 'user-read-playback-state user-modify-playback-state user-read-currently-playing',
+    redirect_uri: window.location.href.split('?')[0],
+    state: 'neondrive'
+  });
+  // Check if demo mode or real client id
+  if (SP_CLIENT_ID === 'YOUR_SPOTIFY_CLIENT_ID') {
+    showDemoSpotify();
+  } else {
+    window.location.href = 'https://accounts.spotify.com/authorize?' + params;
+  }
+}
+
+function showDemoSpotify() {
+  showToast('Demo-Modus: Spotify wird simuliert');
+  renderSpotifyUI({
+    name: 'Cyberpunk Synthwave',
+    artist: 'Perturbator',
+    duration: 285,
+    progress: 60,
+    playing: true
+  });
+  setInterval(() => {
+    const tracks = [
+      {name:'She Moves Like a Knife',artist:'Perturbator',duration:240,progress:45,playing:true},
+      {name:'Technoir',artist:'Gunship',duration:300,progress:120,playing:true},
+      {name:'Nightcall',artist:'Kavinsky',duration:225,progress:80,playing:true},
+      {name:'Dust',artist:'Stellar Dreams',duration:196,progress:30,playing:true},
+    ];
+    const t = tracks[Math.floor(Date.now()/15000) % tracks.length];
+    t.progress = (t.progress + 1) % t.duration;
+    renderSpotifyUI(t);
+  }, 1000);
+}
+
+function renderSpotifyUI(track) {
+  const b = document.getElementById('sp-body');
+  const pct = Math.round((track.progress / track.duration) * 100);
+  const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  b.innerHTML = `
+    <div class="spotify-track" title="${track.name}">${track.name}</div>
+    <div class="spotify-artist">${track.artist}</div>
+    <div class="spotify-progress"><div class="spotify-bar" style="width:${pct}%"></div></div>
+    <div style="display:flex;justify-content:space-between;font-family:var(--font-data);font-size:8px;color:rgba(255,255,255,0.3);width:100%">
+      <span>${fmt(track.progress)}</span><span>${fmt(track.duration)}</span>
+    </div>
+    <div class="spotify-controls">
+      <button class="sp-btn" onclick="spotifyCmd('prev')">⏮</button>
+      <button class="sp-btn" onclick="spotifyCmd('play')">${track.playing ? '⏸' : '▶'}</button>
+      <button class="sp-btn" onclick="spotifyCmd('next')">⏭</button>
+    </div>
+    <div class="vol-row">
+      <span class="vol-icon">🔈</span>
+      <input type="range" min="0" max="100" value="70" oninput="spotifyVolume(this.value)">
+      <span class="vol-icon">🔊</span>
+    </div>`;
+}
+
+function spotifyCmd(cmd) {
+  const toasts = { prev: '⏮ VORHERIGER TITEL', play: '⏯ WIEDERGABE', next: '⏭ NÄCHSTER TITEL' };
+  showToast(toasts[cmd]);
+  // Real: fetch Spotify API with spToken
+}
+function spotifyVolume(v) { /* Real: PUT /me/player/volume?volume_percent=v */ }
+
+// Handle Spotify redirect token
+const hash = new URLSearchParams(window.location.hash.substring(1));
+if (hash.get('access_token')) {
+  spToken = hash.get('access_token');
+  showToast('SPOTIFY VERBUNDEN ✓');
+  history.replaceState(null, '', window.location.pathname);
+  showDemoSpotify();
+}
+
+// ============================================================
+// ---- AI VOICE ASSISTANT "HEY DRIVE" ----
+// ============================================================
+let micActive = false, recognition = null;
+
+const AI_RESPONSES = {
+  'hey drive': 'Hallo! Ich bin bereit. Was kann ich für dich tun?',
+  'nächster': 'Spiele den nächsten Titel.',
+  'musik': 'Musik-Panel geöffnet.',
+  'speed': `Aktuelle Geschwindigkeit: ${() => speedKmh} km/h.`,
+  'hud': 'HUD-Modus wird aktiviert.',
+  'navigation': 'Navigation läuft — GPS aktiv.',
+  'score': `Dein Fahrscore beträgt ${() => Math.round(driveScore)} Punkte.`,
+  'default': 'Ich habe dich nicht ganz verstanden. Versuche "Musik", "HUD" oder "Speed".'
+};
+
+function toggleMic() {
+  const btn = document.getElementById('mic-btn');
+  const wave = document.getElementById('ai-wave');
+  
+  if (micActive) {
+    micActive = false;
+    btn.classList.remove('listening');
+    wave.classList.remove('active');
+    document.getElementById('ai-status').textContent = 'BEREIT';
+    if (recognition) recognition.stop();
+    return;
+  }
+  
+  micActive = true;
+  btn.classList.add('listening');
+  wave.classList.add('active');
+  document.getElementById('ai-status').textContent = 'HÖRE ZU…';
+  document.getElementById('ai-response').textContent = '"Hey Drive" — ich höre…';
+  
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR) {
+    recognition = new SR();
+    recognition.lang = 'de-DE';
+    recognition.onresult = e => {
+      const text = e.results[0][0].transcript.toLowerCase();
+      processVoiceCmd(text);
+    };
+    recognition.onend = () => {
+      micActive = false;
+      btn.classList.remove('listening');
+      wave.classList.remove('active');
+      document.getElementById('ai-status').textContent = 'BEREIT';
+    };
+    recognition.start();
+  } else {
+    // Demo without speech API
+    setTimeout(() => {
+      processVoiceCmd('hey drive');
+    }, 2000);
+  }
+}
+
+function processVoiceCmd(text) {
+  document.getElementById('ai-status').textContent = 'VERARBEITE…';
+  let resp = AI_RESPONSES.default;
+  for (const [key, val] of Object.entries(AI_RESPONSES)) {
+    if (text.includes(key)) {
+      resp = typeof val === 'function' ? val() : val;
+      break;
+    }
+  }
+  
+  setTimeout(() => {
+    document.getElementById('ai-response').textContent = resp;
+    document.getElementById('ai-status').textContent = 'ANTWORT GEGEBEN';
+    if (window.speechSynthesis) {
+      const utt = new SpeechSynthesisUtterance(resp);
+      utt.lang = 'de-DE'; utt.rate = 1.1;
+      speechSynthesis.speak(utt);
+    }
+    if (text.includes('hud')) toggleHUD();
+    if (text.includes('nächster')) spotifyCmd('next');
+  }, 600);
+}
+
+// ============================================================
+// ---- HUD WINDSHIELD MODE ----
+// ============================================================
+function toggleHUD() {
+  const hud = document.getElementById('hud-overlay');
+  hud.classList.toggle('show');
+  if (hud.classList.contains('show')) showToast('HUD MODUS AKTIV');
+}
+
+// ============================================================
+// ---- MULTIPLAYER SIMULATION ----
+// ============================================================
+const MP_PLAYERS = [
+  { name: 'RAZOR_X99', speed: 87, score: 94, dist: 12.4, color: '#00f5ff', rank: 1 },
+  { name: 'NEON_GHOST', speed: 73, score: 88, dist: 10.1, color: '#ff00e5', rank: 2 },
+  { name: 'DRIFT_KING', speed: 65, score: 76, dist: 8.7, color: '#ffb300', rank: 3 },
+  { name: 'V3L0CITY', speed: 52, score: 91, dist: 6.2, color: '#39ff14', rank: 4 },
+];
+
+function renderMultiplayer() {
+  const list = document.getElementById('mp-list');
+  MP_PLAYERS[0].speed = simSpeed || speedKmh;
+  MP_PLAYERS.forEach(p => {
+    p.speed += Math.floor(Math.random()*5-2);
+    p.speed = Math.max(10, Math.min(140, p.speed));
+  });
+  MP_PLAYERS.sort((a,b) => b.speed - a.speed);
+  
+  list.innerHTML = MP_PLAYERS.map((p, i) => `
+    <div class="mp-player">
+      <div class="mp-avatar" style="background:${p.color};">${p.name[0]}</div>
+      <div class="mp-info">
+        <div class="mp-name">${p.name}</div>
+        <div class="mp-stat">${p.speed} km/h · ${p.dist.toFixed(1)} km · Score ${p.score}</div>
+      </div>
+      <div class="mp-badge" style="background:rgba(0,0,0,0.5);border:1px solid ${p.color};color:${p.color}">
+        #${i+1}
+      </div>
+    </div>`).join('');
+  document.getElementById('mp-count').textContent = MP_PLAYERS.length;
+  document.getElementById('mp-rank').textContent = '#' + (MP_PLAYERS.findIndex(p=>p.name==='RAZOR_X99')+1);
+}
+setInterval(renderMultiplayer, 2000);
+renderMultiplayer();
+
+</script>
 </body>
 </html>
