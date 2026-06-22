@@ -2,45 +2,25 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Drive OS</title>
-
+<title>NEON DRIVE OS</title>
+<link rel="stylesheet" href="style.css">
 <link rel="manifest" href="manifest.json">
-
-<style>
-body {
-  margin:0;
-  background:#000;
-  color:#0ff;
-  font-family:Arial;
-}
-#map {
-  height:50vh;
-}
-button {
-  padding:10px;
-  margin:5px;
-}
-</style>
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 </head>
 <body>
 
-<h2>Drive OS</h2>
-
-<button onclick="loginSpotify()">Spotify Login</button>
-<button onclick="startNav()">Navigation starten</button>
+<div id="hud">
+  <input id="search" placeholder="Ziel eingeben...">
+  <button onclick="route()">ROUTEN</button>
+  <button onclick="toggleMusic()">MUSIK</button>
+</div>
 
 <div id="map"></div>
 
-<div>
-  Speed: <span id="speed">0</span> km/h
-</div>
+<div id="speed">0</div>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="app.js"></script>
 <script src="map.js"></script>
-<script src="auth.js"></script>
+<script src="spotify.js"></script>
+<script src="app.js"></script>
 
 </body>
 </html>

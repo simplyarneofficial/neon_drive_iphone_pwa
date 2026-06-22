@@ -1,0 +1,17 @@
+
+body { margin:0; background:#000; color:#0ff; font-family:Arial; overflow:hidden; }
+#map { height:80vh; width:100%; }
+#hud {
+  position:fixed; top:10px; left:10px; right:10px;
+  display:flex; gap:8px; z-index:10;
+}
+#hud input {
+  flex:1; padding:10px; background:#111; color:#0ff; border:1px solid #0ff;
+}
+button {
+  background:#111; color:#0ff; border:1px solid #0ff; padding:10px;
+}
+#speed {
+  position:fixed; bottom:20px; left:20px;
+  font-size:40px;
+}
