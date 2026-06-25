@@ -9,8 +9,10 @@
 <meta name="theme-color" content="#020509">
 <title>NEON DRIVE OS</title>
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-/* ── RESET & TOKENS ─────────────────────────────────────── */
+/* â”€â”€ RESET & TOKENS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;}
 :root{
   --c:  #00f0ff;   /* cyan  */
@@ -37,7 +39,7 @@ input[type=range]{-webkit-appearance:none;appearance:none;background:transparent
 input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:var(--b);}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--c);margin-top:-6.5px;box-shadow:0 0 8px var(--c);}
 
-/* ── BACKGROUND ─────────────────────────────────────────── */
+/* â”€â”€ BACKGROUND â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;
   background-image:linear-gradient(rgba(0,240,255,.04)1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,.04)1px,transparent 1px);
   background-size:44px 44px;animation:bgScroll 18s linear infinite;}
@@ -48,7 +50,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 #scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;
   background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07)2px,rgba(0,0,0,.07)4px);}
 
-/* ── HUD FRAME ───────────────────────────────────────────── */
+/* â”€â”€ HUD FRAME â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #hud-frame{position:fixed;inset:0;z-index:2;pointer-events:none;}
 .hc{position:absolute;width:52px;height:52px;border-color:rgba(0,240,255,.28);border-style:solid;}
 .hc.tl{top:calc(var(--st)+10px);left:10px;border-width:2px 0 0 2px;border-radius:5px 0 0 0;}
@@ -56,7 +58,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .hc.bl{bottom:calc(var(--sb)+10px);left:10px;border-width:0 0 2px 2px;border-radius:0 0 0 5px;}
 .hc.br{bottom:calc(var(--sb)+10px);right:10px;border-width:0 2px 2px 0;border-radius:0 0 5px 0;}
 
-/* ── SPLASH ──────────────────────────────────────────────── */
+/* â”€â”€ SPLASH â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #splash{position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:opacity .9s ease;}
 #splash.out{opacity:0;pointer-events:none;}
 .sp-logo{font-family:var(--f1);font-size:clamp(26px,9vw,58px);font-weight:900;letter-spacing:.15em;
@@ -71,20 +73,20 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .sp-item-line{animation:spFade .4s ease forwards;opacity:0;}
 @keyframes spFade{to{opacity:1;}}
 
-/* ── TOAST ───────────────────────────────────────────────── */
+/* â”€â”€ TOAST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #toast{position:fixed;top:calc(var(--st)+58px);left:50%;transform:translateX(-50%) translateY(-8px);
   background:rgba(0,15,28,.96);border:1px solid var(--bh);border-radius:10px;
   padding:7px 16px;font-family:var(--f2);font-size:11px;color:var(--c);
   white-space:nowrap;opacity:0;transition:all .3s;z-index:8000;pointer-events:none;}
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
 
-/* ── MAIN APP ────────────────────────────────────────────── */
+/* â”€â”€ MAIN APP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #app{position:relative;z-index:10;display:flex;flex-direction:column;
   height:100dvh;
   padding:calc(var(--st)+6px) calc(var(--sr)+8px) calc(var(--sb)+6px) calc(var(--sl)+8px);
   gap:7px;overflow:hidden;}
 
-/* ── TOPBAR ──────────────────────────────────────────────── */
+/* â”€â”€ TOPBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #topbar{display:flex;align-items:center;justify-content:space-between;
   height:40px;padding:0 12px;flex-shrink:0;
   background:var(--p);border:1px solid var(--b);border-radius:11px;backdrop-filter:blur(20px);}
@@ -96,16 +98,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .tb-right{display:flex;align-items:center;gap:12px;font-family:var(--f2);font-size:10px;color:rgba(0,240,255,.65);}
 #tb-time{font-size:13px;font-weight:600;color:var(--c);letter-spacing:.05em;}
 
-/* ── PAGES ───────────────────────────────────────────────── */
+/* â”€â”€ PAGES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .page{display:none;flex:1;flex-direction:column;gap:7px;min-height:0;overflow:hidden;}
 .page.on{display:flex;}
 
-/* ── PANEL ───────────────────────────────────────────────── */
+/* â”€â”€ PANEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .pnl{background:var(--p);border:1px solid var(--b);border-radius:13px;backdrop-filter:blur(22px);padding:9px 11px;display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden;}
 .pnl-t{font-family:var(--f1);font-size:8px;font-weight:700;letter-spacing:.25em;color:rgba(0,240,255,.45);border-bottom:1px solid var(--b);padding-bottom:5px;display:flex;align-items:center;gap:5px;}
 .pnl-ico{font-size:11px;}
 
-/* ── PAGE DASH: CENTER ROW ───────────────────────────────── */
+/* â”€â”€ PAGE DASH: CENTER ROW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #ctr{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-shrink:0;}
 /* Tachometer */
 #tacho-wrap{position:relative;flex:0 0 auto;}
@@ -125,11 +127,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 /* Compass */
 #cmp-wrap{flex:0 0 auto;}
 
-/* ── GRID 2×2 ────────────────────────────────────────────── */
+/* â”€â”€ GRID 2Ã—2 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px;flex:1;min-height:0;overflow:hidden;}
 #map-pnl{grid-column:span 2;display:flex;flex-direction:column;}
 #map-box{position:relative;flex:1;border-radius:8px;overflow:hidden;background:rgba(0,10,20,.9);}
-#mapC{width:100%;height:100%;display:block;}
+#mapC{width:100%;height:100%;display:block;background:rgba(0,10,20,.9);}
+.leaflet-container{background:#020912;font-family:var(--f3);}
+.leaflet-control-attribution{background:rgba(0,12,24,.72)!important;color:rgba(0,240,255,.55)!important;font-size:8px!important;}
+.leaflet-control-attribution a{color:var(--c)!important;}
+.leaflet-control-zoom{display:none;}
+.leaflet-tile{filter:saturate(.55) contrast(1.14) brightness(.52) hue-rotate(145deg);}
+.leaflet-marker-icon,.leaflet-marker-shadow{filter:drop-shadow(0 0 8px var(--c));}
 .map-over{position:absolute;inset:0;pointer-events:none;border-radius:8px;}
 .map-xh::before,.map-xh::after{content:'';position:absolute;background:var(--c);opacity:.5;}
 .map-xh::before{width:18px;height:1px;top:50%;left:50%;margin-left:-9px;}
@@ -144,7 +152,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 #nav-info{font-family:var(--f2);font-size:9px;color:rgba(0,240,255,.5);display:flex;gap:10px;padding-top:3px;}
 #nav-info b{color:var(--c);}
 
-/* ── MUSIC PANEL ─────────────────────────────────────────── */
+/* â”€â”€ MUSIC PANEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #mus-pnl .pnl-body{display:flex;flex-direction:column;align-items:center;gap:4px;}
 .mus-track{font-family:var(--f3);font-size:11px;font-weight:600;color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
 .mus-art{font-family:var(--f2);font-size:9px;color:rgba(255,255,255,.35);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
@@ -162,7 +170,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 #mus-file-btn{background:rgba(0,240,255,.07);border:1px solid var(--b);color:rgba(0,240,255,.6);border-radius:8px;padding:5px 10px;font-size:9px;letter-spacing:.1em;width:100%;font-family:var(--f2);}
 #mus-file-input{display:none;}
 
-/* ── AI ASSISTANT ────────────────────────────────────────── */
+/* â”€â”€ AI ASSISTANT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #ai-pnl .pnl-body{display:flex;flex-direction:column;align-items:center;gap:5px;}
 #ai-resp{font-family:var(--f3);font-size:10px;font-weight:500;color:rgba(255,255,255,.8);text-align:center;line-height:1.4;min-height:26px;}
 #mic-btn{background:rgba(255,0,228,.1);border:1px solid rgba(255,0,228,.3);color:var(--m);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .3s;}
@@ -174,7 +182,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .wb{width:3px;min-height:3px;border-radius:2px;background:linear-gradient(to top,var(--m),var(--c));animation:wa .6s ease-in-out infinite;}
 @keyframes wa{0%,100%{height:3px;}50%{height:16px;}}
 
-/* ── DRIVE STATS ─────────────────────────────────────────── */
+/* â”€â”€ DRIVE STATS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .st-row{display:flex;justify-content:space-between;align-items:center;}
 .st-lbl{font-family:var(--f2);font-size:8px;color:rgba(0,240,255,.4);letter-spacing:.08em;}
 .st-val{font-family:var(--f1);font-size:10px;font-weight:700;color:var(--c);}
@@ -188,7 +196,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .score-meta{font-family:var(--f2);font-size:8px;color:rgba(0,240,255,.35);line-height:1.7;}
 .score-meta b{color:var(--c);}
 
-/* ── BOTTOM NAV ──────────────────────────────────────────── */
+/* â”€â”€ BOTTOM NAV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #nav{display:flex;justify-content:space-around;align-items:center;
   height:50px;flex-shrink:0;
   background:var(--p);border:1px solid var(--b);border-radius:14px;backdrop-filter:blur(22px);}
@@ -198,7 +206,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .nb.on{color:var(--c);}
 .nb.on span:first-child{filter:drop-shadow(0 0 5px var(--c));}
 
-/* ── PAGE SYS ────────────────────────────────────────────── */
+/* â”€â”€ PAGE SYS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #pg-sys{overflow-y:auto;}
 .s-row{display:flex;justify-content:space-between;padding:3px 0;font-family:var(--f2);font-size:10px;border-bottom:1px solid rgba(0,240,255,.05);}
 .s-k{color:rgba(0,240,255,.4);}
@@ -209,7 +217,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .act-btn{background:rgba(0,240,255,.07);border:1px solid var(--b);color:var(--c);border-radius:9px;padding:9px 0;font-size:11px;letter-spacing:.1em;font-family:var(--f2);flex:1;transition:all .2s;}
 .act-btn:active{background:rgba(0,240,255,.16);}
 
-/* ── HUD WINDSHIELD ──────────────────────────────────────── */
+/* â”€â”€ HUD WINDSHIELD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #hud{position:fixed;inset:0;z-index:900;display:none;flex-direction:column;justify-content:space-between;
   padding:calc(var(--st)+22px) 22px calc(var(--sb)+18px);
   background:linear-gradient(155deg,rgba(0,4,12,.7) 0%,rgba(0,0,0,.35) 100%);
@@ -225,17 +233,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .hud-inf{font-family:var(--f2);font-size:11px;color:rgba(0,240,255,.5);line-height:1.9;}
 .hud-close{position:absolute;top:calc(var(--st)+14px);right:16px;background:rgba(255,0,228,.12);border:1px solid rgba(255,0,228,.35);color:var(--m);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:14px;}
 
-/* ── MULTIPLAYER ─────────────────────────────────────────── */
+/* â”€â”€ MULTIPLAYER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .mp-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(0,240,255,.05);}
 .mp-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#000;flex-shrink:0;}
 .mp-n{font-family:var(--f3);font-size:11px;font-weight:600;color:#fff;}
 .mp-s{font-family:var(--f2);font-size:8px;color:rgba(255,255,255,.35);}
 .mp-rk{font-family:var(--f1);font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;flex-shrink:0;}
 
-/* ── PAGE NAV ────────────────────────────────────────────── */
+/* â”€â”€ PAGE NAV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #pg-nav{overflow:hidden;}
 #big-map-box{flex:1;position:relative;border-radius:11px;overflow:hidden;background:rgba(0,10,20,.9);}
-#bigMapC{width:100%;height:100%;display:block;}
+#bigMapC{width:100%;height:100%;display:block;background:rgba(0,10,20,.9);}
 .big-map-over{position:absolute;inset:0;pointer-events:none;}
 .big-map-over::before,.big-map-over::after{content:'';position:absolute;background:var(--c);opacity:.4;}
 .big-map-over::before{width:22px;height:1px;top:50%;left:50%;margin-left:-11px;}
@@ -248,7 +256,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 #nav-target b{color:var(--c);}
 .map-btn{background:rgba(0,240,255,.1);border:1px solid var(--b);color:var(--c);border-radius:7px;padding:5px 9px;font-size:11px;pointer-events:all;}
 
-/* ── UTILITY ─────────────────────────────────────────────── */
+/* â”€â”€ UTILITY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .pnl-body{display:flex;flex-direction:column;gap:4px;flex:1;overflow:hidden;}
 .row2{display:flex;gap:7px;}
 </style>
@@ -273,20 +281,20 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 <div id="hud">
   <div class="hud-r1">
     <div><div class="hud-spd" id="h-spd">0</div><div class="hud-spd-u">KM/H</div></div>
-    <div class="hud-arrow" id="h-arr">↑</div>
+    <div class="hud-arrow" id="h-arr">â†‘</div>
   </div>
-  <div class="hud-mid" id="h-mid">● NEON DRIVE HUD ●</div>
+  <div class="hud-mid" id="h-mid">â— NEON DRIVE HUD â—</div>
   <div class="hud-r3">
     <div class="hud-inf">
-      <div>KURS <span id="h-hdg">—</span>°</div>
-      <div>HÖHE <span id="h-alt">—</span> m</div>
+      <div>KURS <span id="h-hdg">â€”</span>Â°</div>
+      <div>HÃ–HE <span id="h-alt">â€”</span> m</div>
     </div>
     <div class="hud-inf" style="text-align:right">
-      <div>ZEIT <span id="h-time">—</span></div>
+      <div>ZEIT <span id="h-time">â€”</span></div>
       <div>SCORE <span id="h-score">100</span></div>
     </div>
   </div>
-  <button class="hud-close" onclick="toggleHUD()">✕</button>
+  <button class="hud-close" onclick="toggleHUD()">âœ•</button>
 </div>
 
 <!-- APP -->
@@ -299,8 +307,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
       <span class="tb-brand">NEON DRIVE OS</span>
     </div>
     <div class="tb-right">
-      <span id="tb-batt">🔋</span>
-      <span id="tb-gps" style="color:rgba(0,240,255,.3)">📡</span>
+      <span id="tb-batt">ðŸ”‹</span>
+      <span id="tb-gps" style="color:rgba(0,240,255,.3)">ðŸ“¡</span>
       <span id="tb-time">--:--</span>
     </div>
   </div>
@@ -312,7 +320,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     <div id="ctr">
       <div id="tacho-wrap">
         <canvas id="tachoC"></canvas>
-        <div id="tacho-lbl"><div id="rpm-n">0</div><div class="rpm-u">RPM ×100</div></div>
+        <div id="tacho-lbl"><div id="rpm-n">0</div><div class="rpm-u">RPM Ã—100</div></div>
       </div>
       <div id="spd-ctr">
         <div id="spd-n">0</div>
@@ -322,42 +330,47 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
       <div id="cmp-wrap"><canvas id="cmpC"></canvas></div>
     </div>
 
-    <!-- 2×2 grid -->
+    <!-- 2Ã—2 grid -->
     <div id="grid2">
 
       <!-- MAP (spans full width) -->
       <div class="pnl" id="map-pnl">
-        <div class="pnl-t"><span class="pnl-ico">🗺</span>NAVIGATION</div>
+        <div class="pnl-t"><span class="pnl-ico">ðŸ—º</span>NAVIGATION</div>
         <div class="pnl-body" style="gap:4px">
           <div id="map-box">
-            <canvas id="mapC"></canvas>
+            <div id="mapC"></div>
             <div class="map-over map-xh"></div>
             <div class="map-hud-spd"><span id="m-spd">0</span> <small style="font-size:8px">km/h</small></div>
-            <div class="map-hud-hdg">HDG <span id="m-hdg">—</span>°</div>
-            <div class="map-coords" id="m-coords">GPS…</div>
-            <div class="map-zoom"><button onclick="mapZoom(1)">+</button><button onclick="mapZoom(-1)">−</button></div>
+            <div class="map-hud-hdg">HDG <span id="m-hdg">â€”</span>Â°</div>
+            <div class="map-coords" id="m-coords">GPSâ€¦</div>
+            <div class="map-zoom"><button onclick="mapZoom(1)">+</button><button onclick="mapZoom(-1)">âˆ’</button></div>
           </div>
-          <div id="nav-info">DIST: <b id="ni-dist">—</b> &nbsp; ROUTE: <b id="ni-route">AUFZEICHNUNG</b></div>
+          <div class="route-search">
+            <input id="route-q" type="search" placeholder="Ziel suchen">
+            <button onclick="searchTarget()">SUCHE</button>
+            <button onclick="routeToTarget()">ROUTE</button>
+          </div>
+          <div id="nav-info">DIST: <b id="ni-dist">â€”</b> &nbsp; ROUTE: <b id="ni-route">OSM BEREIT</b></div>
         </div>
       </div>
 
       <!-- MUSIC -->
       <div class="pnl" id="mus-pnl">
-        <div class="pnl-t"><span class="pnl-ico">🎵</span>MUSIK</div>
+        <div class="pnl-t"><span class="pnl-ico">ðŸŽµ</span>MUSIK</div>
         <div class="pnl-body" id="mus-body">
-          <button id="mus-file-btn" onclick="document.getElementById('mus-file-input').click()">📁 DATEI LADEN</button>
+          <button id="mus-file-btn" onclick="document.getElementById('mus-file-input').click()">ðŸ“ DATEI LADEN</button>
           <input id="mus-file-input" type="file" accept="audio/*" multiple onchange="loadAudio(this)">
           <div id="mus-src">oder Demo-Modus</div>
-          <button class="m-btn" style="font-size:9px;padding:4px 8px;letter-spacing:.08em" onclick="startDemoMusic()">▶ DEMO</button>
+          <button class="m-btn" style="font-size:9px;padding:4px 8px;letter-spacing:.08em" onclick="startDemoMusic()">â–¶ DEMO</button>
         </div>
       </div>
 
       <!-- AI ASSISTANT -->
       <div class="pnl" id="ai-pnl">
-        <div class="pnl-t"><span class="pnl-ico">🎙</span>HEY DRIVE</div>
+        <div class="pnl-t"><span class="pnl-ico">ðŸŽ™</span>HEY DRIVE</div>
         <div class="pnl-body" id="ai-pnl-body">
           <div id="ai-resp">Tippe Mic oder sag<br>"Hey Drive"</div>
-          <button id="mic-btn" onclick="toggleMic()">🎙</button>
+          <button id="mic-btn" onclick="toggleMic()">ðŸŽ™</button>
           <div class="wave" id="wave">
             <div class="wb" style="animation-delay:0s"></div>
             <div class="wb" style="animation-delay:.08s"></div>
@@ -373,7 +386,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 
       <!-- DRIVE STATS (spans full width) -->
       <div class="pnl" style="grid-column:span 2">
-        <div class="pnl-t"><span class="pnl-ico">📊</span>FAHRSTIL-ANALYSE</div>
+        <div class="pnl-t"><span class="pnl-ico">ðŸ“Š</span>FAHRSTIL-ANALYSE</div>
         <div class="pnl-body">
           <div class="st-row"><span class="st-lbl">BESCHLEUNIGUNG</span><span class="st-val" id="a-val">0.0g</span></div>
           <div class="st-bar"><div class="st-fill fc" id="a-bar" style="width:0%"></div></div>
@@ -383,7 +396,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
           <div class="st-bar"><div class="st-fill fr" id="l-bar" style="width:0%"></div></div>
           <div class="score-box">
             <div id="drv-score">100</div>
-            <div class="score-meta">FAHRSCORE<br><b id="sc-trips">0</b> TRIPS · <b id="sc-dist">0.0</b>km</div>
+            <div class="score-meta">FAHRSCORE<br><b id="sc-trips">0</b> TRIPS Â· <b id="sc-dist">0.0</b>km</div>
           </div>
         </div>
       </div>
@@ -394,47 +407,52 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   <!-- PAGE: NAVIGATION (full map) -->
   <div class="page" id="pg-nav">
     <div id="big-map-box">
-      <canvas id="bigMapC"></canvas>
+      <div id="bigMapC"></div>
       <div class="big-map-over"></div>
+      <div class="route-search" style="position:absolute;top:36px;left:8px;right:8px;z-index:500">
+        <input id="route-q-big" type="search" placeholder="Ziel suchen">
+        <button onclick="syncBigSearch();searchTarget()">SUCHE</button>
+        <button onclick="syncBigSearch();routeToTarget()">ROUTE</button>
+      </div>
       <div class="map-hud-spd" style="position:absolute;top:8px;left:10px"><span id="bm-spd">0</span> km/h</div>
-      <div class="map-hud-hdg" style="position:absolute;top:8px;right:10px">HDG <span id="bm-hdg">—</span>°</div>
-      <div class="map-coords" style="position:absolute;bottom:8px;right:10px" id="bm-coords">GPS…</div>
+      <div class="map-hud-hdg" style="position:absolute;top:8px;right:10px">HDG <span id="bm-hdg">â€”</span>Â°</div>
+      <div class="map-coords" style="position:absolute;bottom:8px;right:10px" id="bm-coords">GPSâ€¦</div>
       <div style="position:absolute;bottom:8px;left:8px;display:flex;gap:5px">
         <button class="map-btn" onclick="bigMapZoom(1)">+</button>
-        <button class="map-btn" onclick="bigMapZoom(-1)">−</button>
-        <button class="map-btn" onclick="centerMap()">⊙</button>
+        <button class="map-btn" onclick="bigMapZoom(-1)">âˆ’</button>
+        <button class="map-btn" onclick="centerMap()">âŠ™</button>
       </div>
     </div>
     <div id="nav-data">
       <div class="nd-box"><div class="nd-lbl">GESCHWINDIGKEIT</div><div class="nd-val"><span id="nd-spd">0</span> <small style="font-size:9px;color:rgba(0,240,255,.4)">km/h</small></div></div>
       <div class="nd-box"><div class="nd-lbl">MAX SPEED</div><div class="nd-val"><span id="nd-max">0</span> <small style="font-size:9px;color:rgba(0,240,255,.4)">km/h</small></div></div>
       <div class="nd-box"><div class="nd-lbl">DISTANZ</div><div class="nd-val"><span id="nd-dist">0.0</span> <small style="font-size:9px;color:rgba(0,240,255,.4)">km</small></div></div>
-      <div class="nd-box"><div class="nd-lbl">KURS</div><div class="nd-val"><span id="nd-hdg">—</span>°</div></div>
+      <div class="nd-box"><div class="nd-lbl">KURS</div><div class="nd-val"><span id="nd-hdg">â€”</span>Â°</div></div>
     </div>
     <div id="nav-target">
-      <span>📍</span>
-      <span>Route: <b id="nt-txt">Freie Fahrt — GPS trackt Strecke</b></span>
+      <span>ðŸ“</span>
+      <span>Route: <b id="nt-txt">Ziel suchen oder freie Fahrt tracken</b></span>
     </div>
   </div>
 
   <!-- PAGE: SYSTEM -->
   <div class="page" id="pg-sys">
     <div class="pnl">
-      <div class="pnl-t"><span class="pnl-ico">⚙️</span>SYSTEM</div>
+      <div class="pnl-t"><span class="pnl-ico">âš™ï¸</span>SYSTEM</div>
       <div class="pnl-body">
-        <div class="s-row"><span class="s-k">GPS</span><span class="s-v" id="ss-gps">CHECK…</span></div>
-        <div class="s-row"><span class="s-k">AKKU</span><span class="s-v" id="ss-batt">—</span></div>
-        <div class="s-row"><span class="s-k">KOMPASS</span><span class="s-v" id="ss-comp">—</span></div>
-        <div class="s-row"><span class="s-k">HÖHE</span><span class="s-v" id="ss-alt">—</span></div>
-        <div class="s-row"><span class="s-k">GENAUIGKEIT</span><span class="s-v" id="ss-acc">—</span></div>
-        <div class="s-row"><span class="s-k">BEWEGUNGSSENSOR</span><span class="s-v" id="ss-mot">CHECK…</span></div>
-        <div class="s-row"><span class="s-k">SPRACHERKENNUNG</span><span class="s-v" id="ss-sr">CHECK…</span></div>
-        <div class="s-row"><span class="s-k">PWA MODUS</span><span class="s-v" id="ss-pwa">—</span></div>
-        <div class="s-row"><span class="s-k">DARK WAKE LOCK</span><span class="s-v" id="ss-wl">—</span></div>
+        <div class="s-row"><span class="s-k">GPS</span><span class="s-v" id="ss-gps">CHECKâ€¦</span></div>
+        <div class="s-row"><span class="s-k">AKKU</span><span class="s-v" id="ss-batt">â€”</span></div>
+        <div class="s-row"><span class="s-k">KOMPASS</span><span class="s-v" id="ss-comp">â€”</span></div>
+        <div class="s-row"><span class="s-k">HÃ–HE</span><span class="s-v" id="ss-alt">â€”</span></div>
+        <div class="s-row"><span class="s-k">GENAUIGKEIT</span><span class="s-v" id="ss-acc">â€”</span></div>
+        <div class="s-row"><span class="s-k">BEWEGUNGSSENSOR</span><span class="s-v" id="ss-mot">CHECKâ€¦</span></div>
+        <div class="s-row"><span class="s-k">SPRACHERKENNUNG</span><span class="s-v" id="ss-sr">CHECKâ€¦</span></div>
+        <div class="s-row"><span class="s-k">PWA MODUS</span><span class="s-v" id="ss-pwa">â€”</span></div>
+        <div class="s-row"><span class="s-k">DARK WAKE LOCK</span><span class="s-v" id="ss-wl">â€”</span></div>
       </div>
     </div>
     <div class="pnl">
-      <div class="pnl-t"><span class="pnl-ico">🏁</span>SITZUNG</div>
+      <div class="pnl-t"><span class="pnl-ico">ðŸ</span>SITZUNG</div>
       <div class="pnl-body">
         <div class="s-row"><span class="s-k">MAX SPEED</span><span class="s-v" id="ss-max">0 km/h</span></div>
         <div class="s-row"><span class="s-k">DISTANZ</span><span class="s-v" id="ss-dist">0.0 km</span></div>
@@ -443,16 +461,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
       </div>
     </div>
     <div class="row2">
-      <button class="act-btn" onclick="toggleHUD()">🔲 HUD</button>
-      <button class="act-btn" onclick="resetSession()">🔄 RESET</button>
-      <button class="act-btn" onclick="exportRoute()">💾 ROUTE</button>
+      <button class="act-btn" onclick="toggleHUD()">ðŸ”² HUD</button>
+      <button class="act-btn" onclick="resetSession()">ðŸ”„ RESET</button>
+      <button class="act-btn" onclick="exportRoute()">ðŸ’¾ ROUTE</button>
     </div>
   </div>
 
   <!-- PAGE: MULTIPLAYER (local sim) -->
   <div class="page" id="pg-mp">
     <div class="pnl" style="flex:1;overflow:hidden">
-      <div class="pnl-t"><span class="pnl-ico">🌐</span>LIVE LOBBY</div>
+      <div class="pnl-t"><span class="pnl-ico">ðŸŒ</span>LIVE LOBBY</div>
       <div class="pnl-body" id="mp-list" style="overflow-y:auto"></div>
     </div>
     <div class="pnl" style="flex:0 0 auto">
@@ -466,11 +484,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 
   <!-- BOTTOM NAV -->
   <div id="nav">
-    <button class="nb on" data-page="dash" onclick="goPage('dash',this)"><span>🚀</span><span>DRIVE</span></button>
-    <button class="nb" data-page="nav" onclick="goPage('nav',this)"><span>🗺</span><span>KARTE</span></button>
-    <button class="nb" onclick="toggleHUD()"><span>🔲</span><span>HUD</span></button>
-    <button class="nb" data-page="sys" onclick="goPage('sys',this)"><span>⚙️</span><span>SYS</span></button>
-    <button class="nb" data-page="mp" onclick="goPage('mp',this)"><span>🌐</span><span>MULTI</span></button>
+    <button class="nb on" data-page="dash" onclick="goPage('dash',this)"><span>ðŸš€</span><span>DRIVE</span></button>
+    <button class="nb" data-page="nav" onclick="goPage('nav',this)"><span>ðŸ—º</span><span>KARTE</span></button>
+    <button class="nb" onclick="toggleHUD()"><span>ðŸ”²</span><span>HUD</span></button>
+    <button class="nb" data-page="sys" onclick="goPage('sys',this)"><span>âš™ï¸</span><span>SYS</span></button>
+    <button class="nb" data-page="mp" onclick="goPage('mp',this)"><span>ðŸŒ</span><span>MULTI</span></button>
   </div>
 
 </div><!-- /app -->
@@ -478,12 +496,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 <script>
 'use strict';
 /* ============================================================
-   NEON DRIVE OS v2 — FULLY LOCAL, NO EXTERNAL APIs
+   NEON DRIVE OS v2 â€” FULLY LOCAL, NO EXTERNAL APIs
    Works as iPhone PWA (Add to Home Screen)
    ============================================================ */
 
-// ─── SPLASH ─────────────────────────────────────────────────
-const BOOT_MSGS = ['GPS SENSOR…','BEWEGUNGSSENSOR…','TACHOMETER WebGL…','KOMPASS…','KI ASSISTENT…','FAHRSTIL ANALYSE…','NAVIGATION…','MUSIK ENGINE…','READY.'];
+// â”€â”€â”€ SPLASH â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+const BOOT_MSGS = ['GPS SENSORâ€¦','BEWEGUNGSSENSORâ€¦','TACHOMETER WebGLâ€¦','KOMPASSâ€¦','KI ASSISTENTâ€¦','FAHRSTIL ANALYSEâ€¦','NAVIGATIONâ€¦','MUSIK ENGINEâ€¦','READY.'];
 let bootIdx = 0;
 const spItems = document.getElementById('sp-items');
 const bootTimer = setInterval(() => {
@@ -500,12 +518,12 @@ window.addEventListener('load', () => {
   setTimeout(() => {
     document.getElementById('splash').classList.add('out');
     setTimeout(() => document.getElementById('splash').remove(), 950);
-    toast('NEON DRIVE OS GESTARTET ✓');
+    toast('NEON DRIVE OS GESTARTET âœ“');
     checkSystems();
   }, 2600);
 });
 
-// ─── TOAST ──────────────────────────────────────────────────
+// â”€â”€â”€ TOAST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function toast(msg, ms = 2400) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -513,7 +531,7 @@ function toast(msg, ms = 2400) {
   setTimeout(() => t.classList.remove('on'), ms);
 }
 
-// ─── NAVIGATION ─────────────────────────────────────────────
+// â”€â”€â”€ NAVIGATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function goPage(id, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
   document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
@@ -522,7 +540,7 @@ function goPage(id, btn) {
   if (id === 'nav') { resizeBigMap(); drawBigMap(); }
 }
 
-// ─── TIME ────────────────────────────────────────────────────
+// â”€â”€â”€ TIME â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let sessionStart = Date.now();
 function tick() {
   const d = new Date();
@@ -537,13 +555,13 @@ function tick() {
 }
 setInterval(tick, 1000); tick();
 
-// ─── WAKE LOCK (screen stays on) ────────────────────────────
+// â”€â”€â”€ WAKE LOCK (screen stays on) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let wakeLock = null;
 async function requestWakeLock() {
   try {
     if ('wakeLock' in navigator) {
       wakeLock = await navigator.wakeLock.request('screen');
-      document.getElementById('ss-wl').textContent = 'AKTIV ✓';
+      document.getElementById('ss-wl').textContent = 'AKTIV âœ“';
       document.getElementById('ss-wl').className = 's-v ok';
     } else { document.getElementById('ss-wl').textContent = 'N/A'; }
   } catch { document.getElementById('ss-wl').textContent = 'VERWEIGERT'; }
@@ -552,15 +570,15 @@ document.addEventListener('visibilitychange', async () => {
   if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
 });
 
-// ─── BATTERY ────────────────────────────────────────────────
+// â”€â”€â”€ BATTERY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 if (navigator.getBattery) {
   navigator.getBattery().then(b => {
     const upB = () => {
       const pct = Math.round(b.level * 100);
-      const ico = b.charging ? '⚡' : pct < 20 ? '🪫' : '🔋';
+      const ico = b.charging ? 'âš¡' : pct < 20 ? 'ðŸª«' : 'ðŸ”‹';
       document.getElementById('tb-batt').textContent = ico + pct + '%';
       const el = document.getElementById('ss-batt');
-      el.textContent = pct + '%' + (b.charging ? ' ⚡' : '');
+      el.textContent = pct + '%' + (b.charging ? ' âš¡' : '');
       el.className = 's-v ' + (pct > 30 ? 'ok' : pct > 15 ? 'wo' : 'er');
     };
     upB();
@@ -569,7 +587,7 @@ if (navigator.getBattery) {
   });
 }
 
-// ─── SESSION DATA ────────────────────────────────────────────
+// â”€â”€â”€ SESSION DATA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let maxSpd = 0, totalDist = 0, spdSamples = [], lastPos = null, drvScore = 100;
 let tripCount = +localStorage.getItem('nd_tc') || 0;
 document.getElementById('sc-trips').textContent = tripCount;
@@ -580,7 +598,7 @@ function resetSession() {
   tripCount++; localStorage.setItem('nd_tc', tripCount);
   document.getElementById('sc-trips').textContent = tripCount;
   ['s-max','s-avg','ss-max'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '0'; });
-  toast('SESSION ZURÜCKGESETZT ↺');
+  toast('SESSION ZURÃœCKGESETZT â†º');
 }
 
 function exportRoute() {
@@ -589,10 +607,10 @@ function exportRoute() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = 'neondrive_route_' + Date.now() + '.json';
   a.click(); URL.revokeObjectURL(url);
-  toast('ROUTE GESPEICHERT 💾');
+  toast('ROUTE GESPEICHERT ðŸ’¾');
 }
 
-// ─── COMPASS (DeviceOrientation) ────────────────────────────
+// â”€â”€â”€ COMPASS (DeviceOrientation) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let compass = 0;
 const DIR = ['N','NO','O','SO','S','SW','W','NW'];
 function dir(d) { return DIR[Math.round(d/45)%8]; }
@@ -601,7 +619,7 @@ function handleOrientation(e) {
   if (e.alpha == null) return;
   // iOS: webkitCompassHeading is true north; fallback alpha
   compass = (e.webkitCompassHeading != null) ? Math.round(e.webkitCompassHeading) : Math.round(360 - e.alpha);
-  document.getElementById('ss-comp').textContent = compass + '° ' + dir(compass);
+  document.getElementById('ss-comp').textContent = compass + 'Â° ' + dir(compass);
   document.getElementById('m-hdg').textContent = compass;
   document.getElementById('bm-hdg').textContent = compass;
   document.getElementById('h-hdg').textContent = compass;
@@ -626,10 +644,10 @@ async function requestMotion() {
 document.getElementById('mic-btn').addEventListener('click', () => {}, { once: true });
 window.addEventListener('touchstart', () => { requestMotion(); requestWakeLock(); }, { once: true });
 
-// ─── ACCELEROMETER / DRIVE STYLE ────────────────────────────
+// â”€â”€â”€ ACCELEROMETER / DRIVE STYLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let prevAy = 0;
 window.addEventListener('devicemotion', e => {
-  document.getElementById('ss-mot').textContent = 'AKTIV ✓';
+  document.getElementById('ss-mot').textContent = 'AKTIV âœ“';
   document.getElementById('ss-mot').className = 's-v ok';
   const a = e.accelerationIncludingGravity; if (!a) return;
   const G = 9.81;
@@ -659,7 +677,7 @@ window.addEventListener('devicemotion', e => {
 function set(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
 function setW(id, w) { const el = document.getElementById(id); if (el) el.style.width = Math.min(100, Math.max(0, w)) + '%'; }
 
-// ─── GEOLOCATION ────────────────────────────────────────────
+// â”€â”€â”€ GEOLOCATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let curSpd = 0, curLat = 52.52, curLon = 13.405, curAlt = null;
 let trail = [];
 let mapScale = 6000, bigMapScale = 4000;
@@ -671,14 +689,14 @@ if (navigator.geolocation) {
     curSpd = speed != null ? Math.round(speed * 3.6) : curSpd;
 
     updateSpeed(curSpd);
-    document.getElementById('tb-gps').textContent = '📡GPS';
+    document.getElementById('tb-gps').textContent = 'ðŸ“¡GPS';
     document.getElementById('tb-gps').style.color = 'var(--g)';
-    document.getElementById('ss-gps').textContent = 'AKTIV ✓';
+    document.getElementById('ss-gps').textContent = 'AKTIV âœ“';
     document.getElementById('ss-gps').className = 's-v ok';
-    document.getElementById('ss-alt').textContent = altitude ? Math.round(altitude) + ' m' : '—';
-    document.getElementById('ss-acc').textContent = accuracy ? Math.round(accuracy) + ' m' : '—';
-    document.getElementById('h-alt').textContent = altitude ? Math.round(altitude) : '—';
-    const coordStr = lat.toFixed(5) + '°N  ' + lon.toFixed(5) + '°E';
+    document.getElementById('ss-alt').textContent = altitude ? Math.round(altitude) + ' m' : 'â€”';
+    document.getElementById('ss-acc').textContent = accuracy ? Math.round(accuracy) + ' m' : 'â€”';
+    document.getElementById('h-alt').textContent = altitude ? Math.round(altitude) : 'â€”';
+    const coordStr = lat.toFixed(5) + 'Â°N  ' + lon.toFixed(5) + 'Â°E';
     document.getElementById('m-coords').textContent = coordStr;
     document.getElementById('bm-coords').textContent = coordStr;
 
@@ -695,8 +713,7 @@ if (navigator.geolocation) {
     }
     lastPos = [lat, lon];
 
-    drawMap(mapC, mctx, mapScale);
-    drawMap(bigMapC, bmctx, bigMapScale);
+    updateLeafletMaps();
     drawTacho(curSpd);
   }, err => {
     document.getElementById('ss-gps').textContent = err.code === 1 ? 'VERWEIGERT' : 'FEHLER';
@@ -731,7 +748,7 @@ function updateSpeed(spd) {
   drawTacho(spd);
 }
 
-// ─── DEMO GPS ───────────────────────────────────────────────
+// â”€â”€â”€ DEMO GPS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function startDemoGPS() {
   document.getElementById('ss-gps').textContent = 'DEMO';
   document.getElementById('ss-gps').className = 's-v wo';
@@ -749,133 +766,156 @@ function startDemoGPS() {
     set('bm-hdg', Math.round(compass));
     trail.push([curLat, curLon]);
     if (trail.length > 200) trail.shift();
-    const c = curLat.toFixed(5)+'°N '+curLon.toFixed(5)+'°E';
+    const c = curLat.toFixed(5)+'Â°N '+curLon.toFixed(5)+'Â°E';
     set('m-coords', c); set('bm-coords', c);
     totalDist += 0.008;
     set('sc-dist', totalDist.toFixed(1));
     set('ss-dist', totalDist.toFixed(2) + ' km');
     set('ni-dist', totalDist.toFixed(2) + ' km');
     set('nd-dist', totalDist.toFixed(1));
-    drawMap(mapC, mctx, mapScale);
-    drawMap(bigMapC, bmctx, bigMapScale);
+    updateLeafletMaps();
   }, 400);
 }
 
-// ─── MAP (Canvas — GPS trail, no external API) ───────────────
+// OSM MAP + ROUTING (Leaflet, OSM/Nominatim/OSRM - no paid APIs)
 const mapC = document.getElementById('mapC');
-const mctx = mapC.getContext('2d');
 const bigMapC = document.getElementById('bigMapC');
-const bmctx = bigMapC.getContext('2d');
+let miniMap = null, bigMap = null, posMarker = null, bigPosMarker = null;
+let routeMarker = null, bigRouteMarker = null, trailLine = null, bigTrailLine = null, routeLine = null, bigRouteLine = null;
+let routeTarget = null, routeName = '';
 
-function resizeMapCanvas(c) {
-  c.width = c.offsetWidth * devicePixelRatio;
-  c.height = c.offsetHeight * devicePixelRatio;
+const neonIcon = L.divIcon({
+  className: 'nd-pos-icon',
+  html: '<div style="width:18px;height:18px;border:2px solid #fff;border-radius:50%;background:#00f0ff;box-shadow:0 0 14px #00f0ff"></div>',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9]
+});
+const targetIcon = L.divIcon({
+  className: 'nd-target-icon',
+  html: '<div style="width:16px;height:16px;border:2px solid #ff00e4;border-radius:50%;background:rgba(255,0,228,.45);box-shadow:0 0 14px #ff00e4"></div>',
+  iconSize: [16, 16],
+  iconAnchor: [8, 8]
+});
+
+function initLeafletMaps() {
+  if (!window.L || miniMap) return;
+  const start = [curLat, curLon];
+  miniMap = makeMap('mapC', start, 14);
+  bigMap = makeMap('bigMapC', start, 15);
+  posMarker = L.marker(start, { icon: neonIcon }).addTo(miniMap);
+  bigPosMarker = L.marker(start, { icon: neonIcon }).addTo(bigMap);
+  trailLine = L.polyline([], { color: '#00f0ff', weight: 3, opacity: .72 }).addTo(miniMap);
+  bigTrailLine = L.polyline([], { color: '#00f0ff', weight: 4, opacity: .72 }).addTo(bigMap);
+  setTimeout(() => { miniMap.invalidateSize(); bigMap.invalidateSize(); }, 250);
 }
+
+function makeMap(id, start, zoom) {
+  const map = L.map(id, { zoomControl: false, attributionControl: true }).setView(start, zoom);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+  return map;
+}
+
+function updateLeafletMaps(center = false) {
+  initLeafletMaps();
+  if (!miniMap) return;
+  const pos = [curLat, curLon];
+  posMarker.setLatLng(pos);
+  bigPosMarker.setLatLng(pos);
+  trailLine.setLatLngs(trail);
+  bigTrailLine.setLatLngs(trail);
+  if (center || !miniMap.getBounds().pad(-.25).contains(pos)) miniMap.setView(pos);
+  if (center || !bigMap.getBounds().pad(-.25).contains(pos)) bigMap.setView(pos);
+}
+
 function resizeBigMap() {
-  resizeMapCanvas(bigMapC);
-  drawMap(bigMapC, bmctx, bigMapScale);
+  initLeafletMaps();
+  setTimeout(() => { if (bigMap) bigMap.invalidateSize(); updateLeafletMaps(true); }, 120);
 }
+function drawBigMap() { updateLeafletMaps(true); }
+function drawMap() { updateLeafletMaps(); }
+function resizeMapCanvas() { if (miniMap) miniMap.invalidateSize(); }
+function mapZoom(dir) { initLeafletMaps(); if (miniMap) miniMap.setZoom(miniMap.getZoom() + (dir > 0 ? 1 : -1)); }
+function bigMapZoom(dir) { initLeafletMaps(); if (bigMap) bigMap.setZoom(bigMap.getZoom() + (dir > 0 ? 1 : -1)); }
+function centerMap() { updateLeafletMaps(true); }
+function syncBigSearch() {
+  const small = document.getElementById('route-q');
+  const big = document.getElementById('route-q-big');
+  if (small && big && big.value.trim()) small.value = big.value.trim();
+}
+
+async function searchTarget() {
+  initLeafletMaps();
+  const q = (document.getElementById('route-q')?.value || document.getElementById('route-q-big')?.value || '').trim();
+  if (!q) { toast('ZIEL EINGEBEN'); return; }
+  set('ni-route', 'SUCHE...');
+  try {
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q);
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const data = await res.json();
+    if (!data.length) { set('ni-route', 'NICHT GEFUNDEN'); toast('ZIEL NICHT GEFUNDEN'); return; }
+    routeTarget = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+    routeName = data[0].display_name.split(',').slice(0, 2).join(',');
+    placeTargetMarkers();
+    miniMap.setView(routeTarget, 15);
+    bigMap.setView(routeTarget, 15);
+    set('ni-route', 'ZIEL GESETZT');
+    set('nt-txt', routeName);
+    toast('ZIEL GEFUNDEN');
+  } catch {
+    set('ni-route', 'SUCHE FEHLER');
+    toast('SUCHE NICHT VERFUEGBAR');
+  }
+}
+
+function placeTargetMarkers() {
+  if (!routeTarget) return;
+  if (routeMarker) routeMarker.remove();
+  if (bigRouteMarker) bigRouteMarker.remove();
+  routeMarker = L.marker(routeTarget, { icon: targetIcon }).addTo(miniMap);
+  bigRouteMarker = L.marker(routeTarget, { icon: targetIcon }).addTo(bigMap);
+}
+
+async function routeToTarget() {
+  initLeafletMaps();
+  if (!routeTarget) { await searchTarget(); }
+  if (!routeTarget) return;
+  set('ni-route', 'ROUTING...');
+  const src = [curLon, curLat].join(',');
+  const dst = [routeTarget[1], routeTarget[0]].join(',');
+  try {
+    const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${src};${dst}?overview=full&geometries=geojson&steps=true`);
+    const data = await res.json();
+    const route = data.routes && data.routes[0];
+    if (!route) { set('ni-route', 'KEINE ROUTE'); toast('KEINE ROUTE GEFUNDEN'); return; }
+    const coords = route.geometry.coordinates.map(p => [p[1], p[0]]);
+    if (routeLine) routeLine.remove();
+    if (bigRouteLine) bigRouteLine.remove();
+    routeLine = L.polyline(coords, { color: '#ff00e4', weight: 4, opacity: .86 }).addTo(miniMap);
+    bigRouteLine = L.polyline(coords, { color: '#ff00e4', weight: 5, opacity: .9 }).addTo(bigMap);
+    const km = (route.distance / 1000).toFixed(1);
+    const min = Math.round(route.duration / 60);
+    set('ni-dist', km + ' km');
+    set('ni-route', min + ' MIN');
+    set('nt-txt', `${routeName || 'Ziel'} - ${km} km / ${min} min`);
+    miniMap.fitBounds(routeLine.getBounds(), { padding: [20, 20] });
+    bigMap.fitBounds(bigRouteLine.getBounds(), { padding: [30, 30] });
+    toast('ROUTE BERECHNET');
+  } catch {
+    set('ni-route', 'ROUTING FEHLER');
+    toast('ROUTING NICHT VERFUEGBAR');
+  }
+}
+
+setTimeout(initLeafletMaps, 300);
 window.addEventListener('resize', () => {
-  resizeMapCanvas(mapC);
-  resizeMapCanvas(bigMapC);
-  drawMap(mapC, mctx, mapScale);
-  drawMap(bigMapC, bmctx, bigMapScale);
+  if (miniMap) miniMap.invalidateSize();
+  if (bigMap) bigMap.invalidateSize();
   resizeTacho(); resizeCompass();
 });
-setTimeout(() => {
-  resizeMapCanvas(mapC);
-  resizeMapCanvas(bigMapC);
-  drawMap(mapC, mctx, mapScale);
-}, 100);
-
-function mapZoom(dir) { mapScale = Math.min(80000, Math.max(800, mapScale * (dir > 0 ? 1.5 : 0.67))); drawMap(mapC, mctx, mapScale); }
-function bigMapZoom(dir) { bigMapScale = Math.min(80000, Math.max(800, bigMapScale * (dir > 0 ? 1.5 : 0.67))); drawMap(bigMapC, bmctx, bigMapScale); }
-function centerMap() { drawMap(bigMapC, bmctx, bigMapScale); }
-
-function drawMap(canvas, ctx, scale) {
-  const W = canvas.width, H = canvas.height;
-  if (!W || !H) return;
-  ctx.clearRect(0, 0, W, H);
-  const dpr = devicePixelRatio;
-
-  // Background
-  ctx.fillStyle = 'rgba(0,8,18,.97)';
-  ctx.fillRect(0, 0, W, H);
-
-  // Grid lines
-  ctx.strokeStyle = 'rgba(0,240,255,.06)';
-  ctx.lineWidth = dpr;
-  const gs = 32 * dpr;
-  for (let x = 0; x < W; x += gs) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-  for (let y = 0; y < H; y += gs) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-
-  const cx = W / 2, cy = H / 2;
-  const refLat = curLat, refLon = curLon;
-
-  // Convert GPS coords → canvas pixels
-  function toXY(lat, lon) {
-    const x = cx + (lon - refLon) * scale * dpr * Math.cos(refLat * Math.PI / 180);
-    const y = cy - (lat - refLat) * scale * dpr;
-    return [x, y];
-  }
-
-  // Trail
-  if (trail.length > 1) {
-    ctx.beginPath();
-    const [x0, y0] = toXY(trail[0][0], trail[0][1]);
-    ctx.moveTo(x0, y0);
-    for (let i = 1; i < trail.length; i++) {
-      const [x, y] = toXY(trail[i][0], trail[i][1]);
-      ctx.lineTo(x, y);
-    }
-    const trailGrad = ctx.createLinearGradient(0, 0, W, 0);
-    trailGrad.addColorStop(0, 'rgba(0,240,255,.12)');
-    trailGrad.addColorStop(1, 'rgba(0,240,255,.7)');
-    ctx.strokeStyle = trailGrad;
-    ctx.lineWidth = 2 * dpr;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.stroke();
-  }
-
-  // Current position
-  const pg = ctx.createRadialGradient(cx, cy, 0, cx, cy, 14 * dpr);
-  pg.addColorStop(0, 'rgba(0,240,255,.5)');
-  pg.addColorStop(1, 'transparent');
-  ctx.fillStyle = pg;
-  ctx.beginPath(); ctx.arc(cx, cy, 14 * dpr, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#fff';
-  ctx.beginPath(); ctx.arc(cx, cy, 4 * dpr, 0, Math.PI * 2); ctx.fill();
-
-  // Heading arrow
-  const headRad = compass * Math.PI / 180;
-  ctx.beginPath();
-  ctx.moveTo(cx, cy);
-  ctx.lineTo(cx + Math.sin(headRad) * 22 * dpr, cy - Math.cos(headRad) * 22 * dpr);
-  ctx.strokeStyle = 'rgba(255,179,0,.85)';
-  ctx.lineWidth = 2.5 * dpr;
-  ctx.lineCap = 'round';
-  ctx.stroke();
-
-  // Speed rings (range circles)
-  for (let i = 1; i <= 2; i++) {
-    ctx.beginPath();
-    ctx.arc(cx, cy, i * 60 * dpr, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(0,240,255,.05)';
-    ctx.lineWidth = dpr;
-    ctx.setLineDash([4 * dpr, 8 * dpr]);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  // Scale indicator
-  const km = (1 / (scale * dpr / W) * 111).toFixed(1);
-  ctx.fillStyle = 'rgba(0,240,255,.3)';
-  ctx.font = `${10 * dpr}px monospace`;
-  ctx.fillText('~' + km + ' km visible', 8 * dpr, H - 8 * dpr);
-}
-
-// ─── 3D TACHOMETER (Canvas WebGL-style) ─────────────────────
+// â”€â”€â”€ 3D TACHOMETER (Canvas WebGL-style) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const tachoC = document.getElementById('tachoC');
 const ttx = tachoC.getContext('2d');
 
@@ -961,7 +1001,7 @@ function drawTacho(spd) {
 
 setTimeout(resizeTacho, 120);
 
-// ─── COMPASS (Canvas) ────────────────────────────────────────
+// â”€â”€â”€ COMPASS (Canvas) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const cmpC = document.getElementById('cmpC');
 const cctx = cmpC.getContext('2d');
 
@@ -1027,12 +1067,12 @@ function drawCompass(deg) {
   ctx.fillStyle='rgba(0,240,255,.6)';
   ctx.font=`bold ${W*.082}px 'Share Tech Mono'`;
   ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(Math.round(deg)+'°', cx, cy+r*.38);
+  ctx.fillText(Math.round(deg)+'Â°', cx, cy+r*.38);
 }
 
 setTimeout(resizeCompass, 120);
 
-// ─── MUSIC ENGINE (local files + demo) ──────────────────────
+// â”€â”€â”€ MUSIC ENGINE (local files + demo) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let audioCtx = null, audioSrc = null, gainNode = null;
 let playlist = [], playIdx = 0, playing = false;
 let demoPaused = false, demoTrackIdx = 0;
@@ -1051,7 +1091,7 @@ function loadAudio(input) {
   playlist = files.map(f => ({ title: f.name.replace(/\.[^.]+$/, ''), artist: 'Lokal', file: f }));
   playIdx = 0;
   playTrack(0);
-  toast('🎵 ' + playlist.length + ' TITEL GELADEN');
+  toast('ðŸŽµ ' + playlist.length + ' TITEL GELADEN');
 }
 
 function playTrack(idx) {
@@ -1127,12 +1167,12 @@ function renderMusicUI(title, artist, dur, pos, isPlaying) {
     <div class="mus-prog"><div class="mus-bar" style="width:${pos/dur*100}%"></div></div>
     <div class="mus-time"><span>${fmt(pos)}</span><span>${fmt(dur)}</span></div>
     <div class="mus-ctrl">
-      <button class="m-btn" onclick="musicCmd('prev')">⏮</button>
-      <button class="m-btn big" id="play-btn" onclick="musicCmd('play')">${isPlaying ? '⏸' : '▶'}</button>
-      <button class="m-btn" onclick="musicCmd('next')">⏭</button>
+      <button class="m-btn" onclick="musicCmd('prev')">â®</button>
+      <button class="m-btn big" id="play-btn" onclick="musicCmd('play')">${isPlaying ? 'â¸' : 'â–¶'}</button>
+      <button class="m-btn" onclick="musicCmd('next')">â­</button>
     </div>
-    <div class="vol-row"><span>🔈</span><input type="range" min="0" max="100" value="70" oninput="setVol(this.value)"><span>🔊</span></div>
-    <button id="mus-file-btn" onclick="document.getElementById('mus-file-input').click()" style="font-size:8px;padding:3px 8px">📁 DATEIEN</button>
+    <div class="vol-row"><span>ðŸ”ˆ</span><input type="range" min="0" max="100" value="70" oninput="setVol(this.value)"><span>ðŸ”Š</span></div>
+    <button id="mus-file-btn" onclick="document.getElementById('mus-file-input').click()" style="font-size:8px;padding:3px 8px">ðŸ“ DATEIEN</button>
     <input id="mus-file-input" type="file" accept="audio/*" multiple onchange="loadAudio(this)" style="display:none">
   `;
 }
@@ -1144,41 +1184,41 @@ function musicCmd(cmd) {
     else if (cmd === 'play') {
       if (audioCtx) {
         if (playing) { audioCtx.suspend(); playing = false; } else { audioCtx.resume(); playing = true; }
-        const pb = document.getElementById('play-btn'); if (pb) pb.textContent = playing ? '⏸' : '▶';
+        const pb = document.getElementById('play-btn'); if (pb) pb.textContent = playing ? 'â¸' : 'â–¶';
       }
     }
   } else {
     if (cmd === 'next') { demoTrackIdx++; startDemoMusic(); }
     else if (cmd === 'prev') { demoTrackIdx = Math.max(0, demoTrackIdx - 1); startDemoMusic(); }
-    else if (cmd === 'play') { demoPaused = !demoPaused; const pb = document.getElementById('play-btn'); if (pb) pb.textContent = demoPaused ? '▶' : '⏸'; }
+    else if (cmd === 'play') { demoPaused = !demoPaused; const pb = document.getElementById('play-btn'); if (pb) pb.textContent = demoPaused ? 'â–¶' : 'â¸'; }
   }
 }
 
 function setVol(v) { if (gainNode) gainNode.gain.value = v / 100; }
 
-// ─── AI VOICE ASSISTANT ──────────────────────────────────────
+// â”€â”€â”€ AI VOICE ASSISTANT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let micOn = false, recog = null;
 
 document.getElementById('ss-sr').textContent =
-  ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) ? 'VERFÜGBAR ✓' : 'N/A';
+  ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) ? 'VERFÃœGBAR âœ“' : 'N/A';
 document.getElementById('ss-sr').className =
   ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) ? 's-v ok' : 's-v wo';
 
 const CMDS = [
   [['hey drive','hallo drive'], 'Hallo! Ich bin dein Fahrassistent. Was brauchst du?'],
-  [['nächster','weiter','skip'], () => { musicCmd('next'); return 'Nächster Titel läuft.'; }],
-  [['vorheriger','zurück'], () => { musicCmd('prev'); return 'Vorheriger Titel.'; }],
+  [['nÃ¤chster','weiter','skip'], () => { musicCmd('next'); return 'NÃ¤chster Titel lÃ¤uft.'; }],
+  [['vorheriger','zurÃ¼ck'], () => { musicCmd('prev'); return 'Vorheriger Titel.'; }],
   [['pause','stop musik'], () => { musicCmd('play'); return 'Pause.'; }],
   [['hud','frontscheibe'], () => { toggleHUD(); return 'HUD wird angezeigt.'; }],
   [['score','fahrstil'], () => `Dein Fahrscore: ${Math.round(drvScore)} Punkte.`],
   [['speed','geschwindigkeit','tempo'], () => `Aktuelle Geschwindigkeit: ${curSpd} km/h.`],
   [['maximum','max speed'], () => `Maximale Geschwindigkeit: ${maxSpd} km/h.`],
   [['distanz','strecke'], () => `Gefahrene Strecke: ${totalDist.toFixed(1)} km.`],
-  [['karte','navigation','nav'], () => { goPage('nav', null); return 'Karte geöffnet.'; }],
-  [['reset','neustart'], () => { resetSession(); return 'Session zurückgesetzt.'; }],
-  [['kompass','richtung','kurs'], () => `Aktueller Kurs: ${compass}° ${dir(compass)}.`],
-  [['system'], () => { goPage('sys', null); return 'System-Info geöffnet.'; }],
-  [['hilfe','befehle'], 'Befehle: Hey Drive, Nächster, Pause, HUD, Speed, Score, Distanz, Karte, System, Reset, Kompass.'],
+  [['karte','navigation','nav'], () => { goPage('nav', null); return 'Karte geÃ¶ffnet.'; }],
+  [['reset','neustart'], () => { resetSession(); return 'Session zurÃ¼ckgesetzt.'; }],
+  [['kompass','richtung','kurs'], () => `Aktueller Kurs: ${compass}Â° ${dir(compass)}.`],
+  [['system'], () => { goPage('sys', null); return 'System-Info geÃ¶ffnet.'; }],
+  [['hilfe','befehle'], 'Befehle: Hey Drive, NÃ¤chster, Pause, HUD, Speed, Score, Distanz, Karte, System, Reset, Kompass.'],
 ];
 
 function toggleMic() {
@@ -1191,8 +1231,8 @@ function toggleMic() {
   // iOS: need user gesture + permission
   requestMotion();
   micOn = true; btn.classList.add('on'); wave.classList.add('on');
-  set('ai-stat', 'HÖRE ZU…');
-  set('ai-resp', 'Ich höre…');
+  set('ai-stat', 'HÃ–RE ZUâ€¦');
+  set('ai-resp', 'Ich hÃ¶reâ€¦');
 
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (SR) {
@@ -1215,8 +1255,8 @@ function micOff() {
 }
 
 function processCmd(text) {
-  set('ai-stat', 'VERARBEITE…');
-  let reply = 'Ich habe dich nicht verstanden. Sag "Hilfe" für alle Befehle.';
+  set('ai-stat', 'VERARBEITEâ€¦');
+  let reply = 'Ich habe dich nicht verstanden. Sag "Hilfe" fÃ¼r alle Befehle.';
   for (const [keys, resp] of CMDS) {
     if (keys.some(k => text.includes(k))) {
       reply = typeof resp === 'function' ? resp() : resp;
@@ -1225,7 +1265,7 @@ function processCmd(text) {
   }
   setTimeout(() => {
     set('ai-resp', reply);
-    set('ai-stat', '● ANTWORT');
+    set('ai-stat', 'â— ANTWORT');
     speak(reply);
     setTimeout(() => { set('ai-stat', 'BEREIT'); }, 3500);
   }, 350);
@@ -1242,16 +1282,16 @@ function speak(text) {
   speechSynthesis.speak(utt);
 }
 
-// ─── HUD WINDSHIELD ──────────────────────────────────────────
+// â”€â”€â”€ HUD WINDSHIELD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function toggleHUD() {
   const hud = document.getElementById('hud');
   hud.classList.toggle('on');
-  if (hud.classList.contains('on')) toast('HUD AKTIV — TIPPE ✕ ZUM SCHLIESSEN');
-  const arr = ['↑','↗','→','↘','↓','↙','←','↖'];
+  if (hud.classList.contains('on')) toast('HUD AKTIV â€” TIPPE âœ• ZUM SCHLIESSEN');
+  const arr = ['â†‘','â†—','â†’','â†˜','â†“','â†™','â†','â†–'];
   document.getElementById('h-arr').textContent = arr[Math.round(compass/45)%8];
 }
 
-// ─── MULTIPLAYER (local simulation) ─────────────────────────
+// â”€â”€â”€ MULTIPLAYER (local simulation) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MP = [
   { n:'RAZOR_X99', spd:85, sc:94, km:12.4, col:'#00f0ff' },
   { n:'NEON_GHOST', spd:71, sc:88, km:10.1, col:'#ff00e4' },
@@ -1273,8 +1313,8 @@ function renderMP() {
     <div class="mp-row">
       <div class="mp-av" style="background:${p.col}">${p.n[0]}</div>
       <div style="flex:1;min-width:0">
-        <div class="mp-n">${p.n}${p.n==='RAZOR_X99'?' ⭐':''}</div>
-        <div class="mp-s">${Math.round(p.spd)} km/h · ${p.km.toFixed(1)} km · Score ${p.sc}</div>
+        <div class="mp-n">${p.n}${p.n==='RAZOR_X99'?' â­':''}</div>
+        <div class="mp-s">${Math.round(p.spd)} km/h Â· ${p.km.toFixed(1)} km Â· Score ${p.sc}</div>
       </div>
       <div class="mp-rk" style="background:rgba(0,0,0,.5);border:1px solid ${p.col};color:${p.col}">#${i+1}</div>
     </div>`).join('');
@@ -1284,20 +1324,20 @@ function renderMP() {
 }
 setInterval(renderMP, 1800); renderMP();
 
-// ─── SYSTEM CHECK ────────────────────────────────────────────
+// â”€â”€â”€ SYSTEM CHECK â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function checkSystems() {
   // PWA
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || !!navigator.standalone;
-  document.getElementById('ss-pwa').textContent = isPWA ? 'STANDALONE ✓' : 'BROWSER (Homescreen empfohlen)';
+  document.getElementById('ss-pwa').textContent = isPWA ? 'STANDALONE âœ“' : 'BROWSER (Homescreen empfohlen)';
   document.getElementById('ss-pwa').className = 's-v ' + (isPWA ? 'ok' : 'wo');
   // GPS check
   if (!navigator.geolocation) {
-    document.getElementById('ss-gps').textContent = 'NICHT VERFÜGBAR';
+    document.getElementById('ss-gps').textContent = 'NICHT VERFÃœGBAR';
     document.getElementById('ss-gps').className = 's-v er';
   }
 }
 
-// ─── SIZE ALL CANVASES ON FIRST RENDER ───────────────────────
+// â”€â”€â”€ SIZE ALL CANVASES ON FIRST RENDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function initSizes() {
   // Tacho: make square based on wrapper
   const tw = document.getElementById('tacho-wrap');
@@ -1305,7 +1345,7 @@ function initSizes() {
   const size = Math.min(window.innerWidth * 0.28, 160);
   [tw, cw].forEach(w => { w.style.width = size+'px'; w.style.height = size+'px'; });
   resizeTacho(); resizeCompass();
-  resizeMapCanvas(mapC);
+  resizeMapCanvas(mapC); updateLeafletMaps();
 }
 window.addEventListener('resize', initSizes);
 setTimeout(initSizes, 200);
