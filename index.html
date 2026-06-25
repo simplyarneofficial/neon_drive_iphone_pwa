@@ -1,26 +1,1314 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NEON DRIVE">
+<meta name="theme-color" content="#020509">
 <title>NEON DRIVE OS</title>
-<link rel="stylesheet" href="style.css">
 <link rel="manifest" href="manifest.json">
+<style>
+/* ── RESET & TOKENS ─────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;}
+:root{
+  --c:  #00f0ff;   /* cyan  */
+  --m:  #ff00e4;   /* magenta */
+  --a:  #ffb300;   /* amber */
+  --g:  #39ff14;   /* green */
+  --r:  #ff3636;   /* red */
+  --bg: #020509;
+  --p:  rgba(0,12,24,.78);
+  --b:  rgba(0,240,255,.16);
+  --bh: rgba(0,240,255,.5);
+  --f1: 'Orbitron',monospace;
+  --f2: 'Share Tech Mono',monospace;
+  --f3: 'Rajdhani',sans-serif;
+  --st: env(safe-area-inset-top,0px);
+  --sb: env(safe-area-inset-bottom,0px);
+  --sl: env(safe-area-inset-left,0px);
+  --sr: env(safe-area-inset-right,0px);
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--c);font-family:var(--f3);}
+canvas{display:block;}
+button{font-family:var(--f3);cursor:pointer;border:none;background:none;color:inherit;}
+input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;}
+input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:var(--b);}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--c);margin-top:-6.5px;box-shadow:0 0 8px var(--c);}
+
+/* ── BACKGROUND ─────────────────────────────────────────── */
+#bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(0,240,255,.04)1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,.04)1px,transparent 1px);
+  background-size:44px 44px;animation:bgScroll 18s linear infinite;}
+@keyframes bgScroll{to{background-position:0 44px;}}
+#bg-glow{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 55% 35% at 15% 25%,rgba(0,240,255,.07),transparent),
+             radial-gradient(ellipse 45% 30% at 85% 75%,rgba(255,0,228,.06),transparent);}
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07)2px,rgba(0,0,0,.07)4px);}
+
+/* ── HUD FRAME ───────────────────────────────────────────── */
+#hud-frame{position:fixed;inset:0;z-index:2;pointer-events:none;}
+.hc{position:absolute;width:52px;height:52px;border-color:rgba(0,240,255,.28);border-style:solid;}
+.hc.tl{top:calc(var(--st)+10px);left:10px;border-width:2px 0 0 2px;border-radius:5px 0 0 0;}
+.hc.tr{top:calc(var(--st)+10px);right:10px;border-width:2px 2px 0 0;border-radius:0 5px 0 0;}
+.hc.bl{bottom:calc(var(--sb)+10px);left:10px;border-width:0 0 2px 2px;border-radius:0 0 0 5px;}
+.hc.br{bottom:calc(var(--sb)+10px);right:10px;border-width:0 2px 2px 0;border-radius:0 0 5px 0;}
+
+/* ── SPLASH ──────────────────────────────────────────────── */
+#splash{position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:opacity .9s ease;}
+#splash.out{opacity:0;pointer-events:none;}
+.sp-logo{font-family:var(--f1);font-size:clamp(26px,9vw,58px);font-weight:900;letter-spacing:.15em;
+  background:linear-gradient(120deg,var(--c),var(--m));-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:spPulse 1.3s ease-in-out infinite;}
+@keyframes spPulse{50%{opacity:.65;}}
+.sp-sub{font-family:var(--f2);font-size:10px;letter-spacing:.4em;color:rgba(0,240,255,.45);}
+.sp-bar{width:180px;height:2px;background:rgba(0,240,255,.1);border-radius:2px;overflow:hidden;margin-top:30px;}
+.sp-fill{height:100%;width:0;background:linear-gradient(90deg,var(--c),var(--m));animation:spLoad 2.4s cubic-bezier(.4,0,.2,1) forwards;}
+@keyframes spLoad{to{width:100%;}}
+.sp-items{font-family:var(--f2);font-size:9px;color:rgba(0,240,255,.35);text-align:center;line-height:1.9;margin-top:16px;}
+.sp-item-line{animation:spFade .4s ease forwards;opacity:0;}
+@keyframes spFade{to{opacity:1;}}
+
+/* ── TOAST ───────────────────────────────────────────────── */
+#toast{position:fixed;top:calc(var(--st)+58px);left:50%;transform:translateX(-50%) translateY(-8px);
+  background:rgba(0,15,28,.96);border:1px solid var(--bh);border-radius:10px;
+  padding:7px 16px;font-family:var(--f2);font-size:11px;color:var(--c);
+  white-space:nowrap;opacity:0;transition:all .3s;z-index:8000;pointer-events:none;}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── MAIN APP ────────────────────────────────────────────── */
+#app{position:relative;z-index:10;display:flex;flex-direction:column;
+  height:100dvh;
+  padding:calc(var(--st)+6px) calc(var(--sr)+8px) calc(var(--sb)+6px) calc(var(--sl)+8px);
+  gap:7px;overflow:hidden;}
+
+/* ── TOPBAR ──────────────────────────────────────────────── */
+#topbar{display:flex;align-items:center;justify-content:space-between;
+  height:40px;padding:0 12px;flex-shrink:0;
+  background:var(--p);border:1px solid var(--b);border-radius:11px;backdrop-filter:blur(20px);}
+.tb-left{display:flex;align-items:center;gap:8px;}
+.tb-dot{width:6px;height:6px;border-radius:50%;background:var(--g);box-shadow:0 0 7px var(--g);animation:blink 2.5s step-end infinite;}
+@keyframes blink{55%{opacity:0;}}
+.tb-brand{font-family:var(--f1);font-size:12px;font-weight:700;letter-spacing:.12em;
+  background:linear-gradient(90deg,var(--c),var(--m));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.tb-right{display:flex;align-items:center;gap:12px;font-family:var(--f2);font-size:10px;color:rgba(0,240,255,.65);}
+#tb-time{font-size:13px;font-weight:600;color:var(--c);letter-spacing:.05em;}
+
+/* ── PAGES ───────────────────────────────────────────────── */
+.page{display:none;flex:1;flex-direction:column;gap:7px;min-height:0;overflow:hidden;}
+.page.on{display:flex;}
+
+/* ── PANEL ───────────────────────────────────────────────── */
+.pnl{background:var(--p);border:1px solid var(--b);border-radius:13px;backdrop-filter:blur(22px);padding:9px 11px;display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden;}
+.pnl-t{font-family:var(--f1);font-size:8px;font-weight:700;letter-spacing:.25em;color:rgba(0,240,255,.45);border-bottom:1px solid var(--b);padding-bottom:5px;display:flex;align-items:center;gap:5px;}
+.pnl-ico{font-size:11px;}
+
+/* ── PAGE DASH: CENTER ROW ───────────────────────────────── */
+#ctr{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-shrink:0;}
+/* Tachometer */
+#tacho-wrap{position:relative;flex:0 0 auto;}
+#tacho-wrap canvas{border-radius:50%;}
+#tacho-lbl{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+#rpm-n{font-family:var(--f1);font-size:clamp(13px,4vw,20px);font-weight:700;color:#fff;text-shadow:0 0 10px var(--c);}
+.rpm-u{font-family:var(--f2);font-size:7px;color:rgba(0,240,255,.5);letter-spacing:.18em;}
+/* Speed */
+#spd-ctr{display:flex;flex-direction:column;align-items:center;gap:3px;}
+#spd-n{font-family:var(--f1);font-size:clamp(52px,15vw,80px);font-weight:900;line-height:1;color:#fff;
+  text-shadow:0 0 28px var(--c),0 0 60px rgba(0,240,255,.3);transition:color .3s,text-shadow .3s;}
+#spd-n.w{color:var(--a);text-shadow:0 0 28px var(--a);}
+#spd-n.d{color:var(--m);text-shadow:0 0 28px var(--m);}
+.spd-u{font-family:var(--f2);font-size:11px;letter-spacing:.25em;color:rgba(0,240,255,.5);}
+#spd-sub{display:flex;gap:12px;font-family:var(--f2);font-size:9px;color:rgba(0,240,255,.45);}
+#spd-sub b{color:var(--c);}
+/* Compass */
+#cmp-wrap{flex:0 0 auto;}
+
+/* ── GRID 2×2 ────────────────────────────────────────────── */
+#grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px;flex:1;min-height:0;overflow:hidden;}
+#map-pnl{grid-column:span 2;display:flex;flex-direction:column;}
+#map-box{position:relative;flex:1;border-radius:8px;overflow:hidden;background:rgba(0,10,20,.9);}
+#mapC{width:100%;height:100%;display:block;}
+.map-over{position:absolute;inset:0;pointer-events:none;border-radius:8px;}
+.map-xh::before,.map-xh::after{content:'';position:absolute;background:var(--c);opacity:.5;}
+.map-xh::before{width:18px;height:1px;top:50%;left:50%;margin-left:-9px;}
+.map-xh::after{width:1px;height:18px;top:50%;left:50%;margin-top:-9px;}
+.map-hud-spd{position:absolute;top:6px;left:8px;font-family:var(--f1);font-size:11px;font-weight:700;color:var(--c);text-shadow:0 0 8px var(--c);}
+.map-hud-hdg{position:absolute;top:6px;right:8px;font-family:var(--f2);font-size:9px;color:var(--a);}
+.map-coords{position:absolute;bottom:5px;right:7px;font-family:var(--f2);font-size:8px;color:rgba(0,240,255,.4);}
+.map-zoom{position:absolute;bottom:5px;left:7px;display:flex;gap:4px;}
+.map-zoom button{background:rgba(0,240,255,.1);border:1px solid var(--b);color:var(--c);width:24px;height:24px;border-radius:5px;font-size:14px;display:flex;align-items:center;justify-content:center;pointer-events:all;}
+
+/* nav route info */
+#nav-info{font-family:var(--f2);font-size:9px;color:rgba(0,240,255,.5);display:flex;gap:10px;padding-top:3px;}
+#nav-info b{color:var(--c);}
+
+/* ── MUSIC PANEL ─────────────────────────────────────────── */
+#mus-pnl .pnl-body{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.mus-track{font-family:var(--f3);font-size:11px;font-weight:600;color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
+.mus-art{font-family:var(--f2);font-size:9px;color:rgba(255,255,255,.35);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
+.mus-prog{width:100%;height:2px;background:rgba(255,255,255,.1);border-radius:2px;}
+.mus-bar{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--g),var(--c));transition:width .6s linear;}
+.mus-time{display:flex;justify-content:space-between;width:100%;font-family:var(--f2);font-size:8px;color:rgba(255,255,255,.25);}
+.mus-ctrl{display:flex;gap:8px;align-items:center;}
+.m-btn{background:rgba(0,240,255,.08);border:1px solid var(--b);color:var(--c);border-radius:8px;padding:5px 10px;font-size:14px;transition:all .15s;}
+.m-btn:active{transform:scale(.88);border-color:var(--c);}
+.m-btn.big{width:34px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:50%;border-color:rgba(0,240,255,.3);}
+.vol-row{display:flex;align-items:center;gap:6px;width:100%;}
+.vol-row span{font-size:10px;color:rgba(0,240,255,.4);}
+.vol-row input{flex:1;}
+#mus-src{font-family:var(--f2);font-size:8px;color:rgba(0,240,255,.3);text-align:center;}
+#mus-file-btn{background:rgba(0,240,255,.07);border:1px solid var(--b);color:rgba(0,240,255,.6);border-radius:8px;padding:5px 10px;font-size:9px;letter-spacing:.1em;width:100%;font-family:var(--f2);}
+#mus-file-input{display:none;}
+
+/* ── AI ASSISTANT ────────────────────────────────────────── */
+#ai-pnl .pnl-body{display:flex;flex-direction:column;align-items:center;gap:5px;}
+#ai-resp{font-family:var(--f3);font-size:10px;font-weight:500;color:rgba(255,255,255,.8);text-align:center;line-height:1.4;min-height:26px;}
+#mic-btn{background:rgba(255,0,228,.1);border:1px solid rgba(255,0,228,.3);color:var(--m);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .3s;}
+#mic-btn.on{background:rgba(255,0,228,.28);border-color:var(--m);box-shadow:0 0 18px rgba(255,0,228,.45);animation:mpulse 1s ease-in-out infinite;}
+@keyframes mpulse{50%{transform:scale(1.12);}}
+#ai-stat{font-family:var(--f2);font-size:8px;color:rgba(0,240,255,.35);letter-spacing:.15em;}
+.wave{display:flex;align-items:flex-end;justify-content:center;gap:2px;height:18px;opacity:0;transition:opacity .3s;}
+.wave.on{opacity:1;}
+.wb{width:3px;min-height:3px;border-radius:2px;background:linear-gradient(to top,var(--m),var(--c));animation:wa .6s ease-in-out infinite;}
+@keyframes wa{0%,100%{height:3px;}50%{height:16px;}}
+
+/* ── DRIVE STATS ─────────────────────────────────────────── */
+.st-row{display:flex;justify-content:space-between;align-items:center;}
+.st-lbl{font-family:var(--f2);font-size:8px;color:rgba(0,240,255,.4);letter-spacing:.08em;}
+.st-val{font-family:var(--f1);font-size:10px;font-weight:700;color:var(--c);}
+.st-bar{width:100%;height:2px;background:rgba(255,255,255,.05);border-radius:2px;margin-bottom:2px;}
+.st-fill{height:100%;border-radius:2px;transition:width .4s ease;}
+.fc{background:linear-gradient(90deg,var(--c),var(--m));}
+.fa{background:linear-gradient(90deg,var(--a),#ff6b00);}
+.fr{background:linear-gradient(90deg,var(--r),var(--m));}
+.score-box{display:flex;align-items:center;justify-content:center;gap:8px;padding:5px;background:rgba(0,240,255,.04);border:1px solid var(--b);border-radius:8px;margin-top:2px;}
+#drv-score{font-family:var(--f1);font-size:20px;font-weight:900;background:linear-gradient(135deg,var(--g),var(--c));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.score-meta{font-family:var(--f2);font-size:8px;color:rgba(0,240,255,.35);line-height:1.7;}
+.score-meta b{color:var(--c);}
+
+/* ── BOTTOM NAV ──────────────────────────────────────────── */
+#nav{display:flex;justify-content:space-around;align-items:center;
+  height:50px;flex-shrink:0;
+  background:var(--p);border:1px solid var(--b);border-radius:14px;backdrop-filter:blur(22px);}
+.nb{display:flex;flex-direction:column;align-items:center;gap:1px;flex:1;color:rgba(0,240,255,.3);transition:color .2s;padding:4px;}
+.nb span:first-child{font-size:17px;}
+.nb span:last-child{font-size:7px;letter-spacing:.08em;font-family:var(--f2);}
+.nb.on{color:var(--c);}
+.nb.on span:first-child{filter:drop-shadow(0 0 5px var(--c));}
+
+/* ── PAGE SYS ────────────────────────────────────────────── */
+#pg-sys{overflow-y:auto;}
+.s-row{display:flex;justify-content:space-between;padding:3px 0;font-family:var(--f2);font-size:10px;border-bottom:1px solid rgba(0,240,255,.05);}
+.s-k{color:rgba(0,240,255,.4);}
+.s-v{color:var(--c);font-weight:600;}
+.s-v.ok{color:var(--g);}
+.s-v.wo{color:var(--a);}
+.s-v.er{color:var(--r);}
+.act-btn{background:rgba(0,240,255,.07);border:1px solid var(--b);color:var(--c);border-radius:9px;padding:9px 0;font-size:11px;letter-spacing:.1em;font-family:var(--f2);flex:1;transition:all .2s;}
+.act-btn:active{background:rgba(0,240,255,.16);}
+
+/* ── HUD WINDSHIELD ──────────────────────────────────────── */
+#hud{position:fixed;inset:0;z-index:900;display:none;flex-direction:column;justify-content:space-between;
+  padding:calc(var(--st)+22px) 22px calc(var(--sb)+18px);
+  background:linear-gradient(155deg,rgba(0,4,12,.7) 0%,rgba(0,0,0,.35) 100%);
+  backdrop-filter:blur(1px);}
+#hud.on{display:flex;}
+.hud-r1{display:flex;justify-content:space-between;align-items:flex-start;}
+.hud-spd{font-family:var(--f1);font-size:clamp(60px,18vw,96px);font-weight:900;color:rgba(255,255,255,.95);text-shadow:0 0 38px var(--c);line-height:1;}
+.hud-spd-u{font-family:var(--f2);font-size:13px;color:rgba(0,240,255,.55);letter-spacing:.3em;}
+.hud-arrow{font-size:56px;color:rgba(0,240,255,.65);text-shadow:0 0 18px var(--c);animation:ap 2s ease-in-out infinite;}
+@keyframes ap{50%{opacity:.45;}}
+.hud-mid{text-align:center;font-family:var(--f1);font-size:12px;color:rgba(0,240,255,.35);letter-spacing:.35em;}
+.hud-r3{display:flex;justify-content:space-between;}
+.hud-inf{font-family:var(--f2);font-size:11px;color:rgba(0,240,255,.5);line-height:1.9;}
+.hud-close{position:absolute;top:calc(var(--st)+14px);right:16px;background:rgba(255,0,228,.12);border:1px solid rgba(255,0,228,.35);color:var(--m);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+
+/* ── MULTIPLAYER ─────────────────────────────────────────── */
+.mp-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(0,240,255,.05);}
+.mp-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#000;flex-shrink:0;}
+.mp-n{font-family:var(--f3);font-size:11px;font-weight:600;color:#fff;}
+.mp-s{font-family:var(--f2);font-size:8px;color:rgba(255,255,255,.35);}
+.mp-rk{font-family:var(--f1);font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;flex-shrink:0;}
+
+/* ── PAGE NAV ────────────────────────────────────────────── */
+#pg-nav{overflow:hidden;}
+#big-map-box{flex:1;position:relative;border-radius:11px;overflow:hidden;background:rgba(0,10,20,.9);}
+#bigMapC{width:100%;height:100%;display:block;}
+.big-map-over{position:absolute;inset:0;pointer-events:none;}
+.big-map-over::before,.big-map-over::after{content:'';position:absolute;background:var(--c);opacity:.4;}
+.big-map-over::before{width:22px;height:1px;top:50%;left:50%;margin-left:-11px;}
+.big-map-over::after{width:1px;height:22px;top:50%;left:50%;margin-top:-11px;}
+#nav-data{display:flex;flex-wrap:wrap;gap:6px;flex-shrink:0;}
+.nd-box{flex:1;min-width:80px;background:var(--p);border:1px solid var(--b);border-radius:10px;padding:7px 10px;font-family:var(--f2);font-size:10px;}
+.nd-lbl{font-size:8px;color:rgba(0,240,255,.4);letter-spacing:.1em;}
+.nd-val{font-family:var(--f1);font-size:14px;font-weight:700;color:var(--c);}
+#nav-target{background:rgba(0,240,255,.04);border:1px solid var(--b);border-radius:10px;padding:7px 10px;display:flex;align-items:center;gap:8px;font-family:var(--f2);font-size:9px;color:rgba(0,240,255,.5);}
+#nav-target b{color:var(--c);}
+.map-btn{background:rgba(0,240,255,.1);border:1px solid var(--b);color:var(--c);border-radius:7px;padding:5px 9px;font-size:11px;pointer-events:all;}
+
+/* ── UTILITY ─────────────────────────────────────────────── */
+.pnl-body{display:flex;flex-direction:column;gap:4px;flex:1;overflow:hidden;}
+.row2{display:flex;gap:7px;}
+</style>
 </head>
 <body>
 
-<div id="hud">
-  <input id="search" placeholder="Ziel eingeben...">
-  <button onclick="route()">ROUTEN</button>
-  <button onclick="toggleMusic()">MUSIK</button>
+<div id="bg-grid"></div>
+<div id="bg-glow"></div>
+<div id="scanlines"></div>
+<div id="hud-frame"><div class="hc tl"></div><div class="hc tr"></div><div class="hc bl"></div><div class="hc br"></div></div>
+<div id="toast"></div>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sp-logo">NEON DRIVE OS</div>
+  <div class="sp-sub">INITIALIZING</div>
+  <div class="sp-bar"><div class="sp-fill"></div></div>
+  <div class="sp-items" id="sp-items"></div>
 </div>
 
-<div id="map"></div>
+<!-- HUD WINDSHIELD -->
+<div id="hud">
+  <div class="hud-r1">
+    <div><div class="hud-spd" id="h-spd">0</div><div class="hud-spd-u">KM/H</div></div>
+    <div class="hud-arrow" id="h-arr">↑</div>
+  </div>
+  <div class="hud-mid" id="h-mid">● NEON DRIVE HUD ●</div>
+  <div class="hud-r3">
+    <div class="hud-inf">
+      <div>KURS <span id="h-hdg">—</span>°</div>
+      <div>HÖHE <span id="h-alt">—</span> m</div>
+    </div>
+    <div class="hud-inf" style="text-align:right">
+      <div>ZEIT <span id="h-time">—</span></div>
+      <div>SCORE <span id="h-score">100</span></div>
+    </div>
+  </div>
+  <button class="hud-close" onclick="toggleHUD()">✕</button>
+</div>
 
-<div id="speed">0</div>
+<!-- APP -->
+<div id="app">
 
-<script src="map.js"></script>
-<script src="spotify.js"></script>
-<script src="app.js"></script>
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <div class="tb-left">
+      <div class="tb-dot"></div>
+      <span class="tb-brand">NEON DRIVE OS</span>
+    </div>
+    <div class="tb-right">
+      <span id="tb-batt">🔋</span>
+      <span id="tb-gps" style="color:rgba(0,240,255,.3)">📡</span>
+      <span id="tb-time">--:--</span>
+    </div>
+  </div>
 
+  <!-- PAGE: DASHBOARD -->
+  <div class="page on" id="pg-dash">
+
+    <!-- Center: Tacho | Speed | Compass -->
+    <div id="ctr">
+      <div id="tacho-wrap">
+        <canvas id="tachoC"></canvas>
+        <div id="tacho-lbl"><div id="rpm-n">0</div><div class="rpm-u">RPM ×100</div></div>
+      </div>
+      <div id="spd-ctr">
+        <div id="spd-n">0</div>
+        <div class="spd-u">KM/H</div>
+        <div id="spd-sub"><span>MAX <b id="s-max">0</b></span><span>AVG <b id="s-avg">0</b></span></div>
+      </div>
+      <div id="cmp-wrap"><canvas id="cmpC"></canvas></div>
+    </div>
+
+    <!-- 2×2 grid -->
+    <div id="grid2">
+
+      <!-- MAP (spans full width) -->
+      <div class="pnl" id="map-pnl">
+        <div class="pnl-t"><span class="pnl-ico">🗺</span>NAVIGATION</div>
+        <div class="pnl-body" style="gap:4px">
+          <div id="map-box">
+            <canvas id="mapC"></canvas>
+            <div class="map-over map-xh"></div>
+            <div class="map-hud-spd"><span id="m-spd">0</span> <small style="font-size:8px">km/h</small></div>
+            <div class="map-hud-hdg">HDG <span id="m-hdg">—</span>°</div>
+            <div class="map-coords" id="m-coords">GPS…</div>
+            <div class="map-zoom"><button onclick="mapZoom(1)">+</button><button onclick="mapZoom(-1)">−</button></div>
+          </div>
+          <div id="nav-info">DIST: <b id="ni-dist">—</b> &nbsp; ROUTE: <b id="ni-route">AUFZEICHNUNG</b></div>
+        </div>
+      </div>
+
+      <!-- MUSIC -->
+      <div class="pnl" id="mus-pnl">
+        <div class="pnl-t"><span class="pnl-ico">🎵</span>MUSIK</div>
+        <div class="pnl-body" id="mus-body">
+          <button id="mus-file-btn" onclick="document.getElementById('mus-file-input').click()">📁 DATEI LADEN</button>
+          <input id="mus-file-input" type="file" accept="audio/*" multiple onchange="loadAudio(this)">
+          <div id="mus-src">oder Demo-Modus</div>
+          <button class="m-btn" style="font-size:9px;padding:4px 8px;letter-spacing:.08em" onclick="startDemoMusic()">▶ DEMO</button>
+        </div>
+      </div>
+
+      <!-- AI ASSISTANT -->
+      <div class="pnl" id="ai-pnl">
+        <div class="pnl-t"><span class="pnl-ico">🎙</span>HEY DRIVE</div>
+        <div class="pnl-body" id="ai-pnl-body">
+          <div id="ai-resp">Tippe Mic oder sag<br>"Hey Drive"</div>
+          <button id="mic-btn" onclick="toggleMic()">🎙</button>
+          <div class="wave" id="wave">
+            <div class="wb" style="animation-delay:0s"></div>
+            <div class="wb" style="animation-delay:.08s"></div>
+            <div class="wb" style="animation-delay:.16s"></div>
+            <div class="wb" style="animation-delay:.24s"></div>
+            <div class="wb" style="animation-delay:.32s"></div>
+            <div class="wb" style="animation-delay:.4s"></div>
+            <div class="wb" style="animation-delay:.48s"></div>
+          </div>
+          <div id="ai-stat">BEREIT</div>
+        </div>
+      </div>
+
+      <!-- DRIVE STATS (spans full width) -->
+      <div class="pnl" style="grid-column:span 2">
+        <div class="pnl-t"><span class="pnl-ico">📊</span>FAHRSTIL-ANALYSE</div>
+        <div class="pnl-body">
+          <div class="st-row"><span class="st-lbl">BESCHLEUNIGUNG</span><span class="st-val" id="a-val">0.0g</span></div>
+          <div class="st-bar"><div class="st-fill fc" id="a-bar" style="width:0%"></div></div>
+          <div class="st-row"><span class="st-lbl">BREMSUNG</span><span class="st-val" id="b-val">0.0g</span></div>
+          <div class="st-bar"><div class="st-fill fa" id="b-bar" style="width:0%"></div></div>
+          <div class="st-row"><span class="st-lbl">SEITKRAFT</span><span class="st-val" id="l-val">0.0g</span></div>
+          <div class="st-bar"><div class="st-fill fr" id="l-bar" style="width:0%"></div></div>
+          <div class="score-box">
+            <div id="drv-score">100</div>
+            <div class="score-meta">FAHRSCORE<br><b id="sc-trips">0</b> TRIPS · <b id="sc-dist">0.0</b>km</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /grid2 -->
+  </div><!-- /pg-dash -->
+
+  <!-- PAGE: NAVIGATION (full map) -->
+  <div class="page" id="pg-nav">
+    <div id="big-map-box">
+      <canvas id="bigMapC"></canvas>
+      <div class="big-map-over"></div>
+      <div class="map-hud-spd" style="position:absolute;top:8px;left:10px"><span id="bm-spd">0</span> km/h</div>
+      <div class="map-hud-hdg" style="position:absolute;top:8px;right:10px">HDG <span id="bm-hdg">—</span>°</div>
+      <div class="map-coords" style="position:absolute;bottom:8px;right:10px" id="bm-coords">GPS…</div>
+      <div style="position:absolute;bottom:8px;left:8px;display:flex;gap:5px">
+        <button class="map-btn" onclick="bigMapZoom(1)">+</button>
+        <button class="map-btn" onclick="bigMapZoom(-1)">−</button>
+        <button class="map-btn" onclick="centerMap()">⊙</button>
+      </div>
+    </div>
+    <div id="nav-data">
+      <div class="nd-box"><div class="nd-lbl">GESCHWINDIGKEIT</div><div class="nd-val"><span id="nd-spd">0</span> <small style="font-size:9px;color:rgba(0,240,255,.4)">km/h</small></div></div>
+      <div class="nd-box"><div class="nd-lbl">MAX SPEED</div><div class="nd-val"><span id="nd-max">0</span> <small style="font-size:9px;color:rgba(0,240,255,.4)">km/h</small></div></div>
+      <div class="nd-box"><div class="nd-lbl">DISTANZ</div><div class="nd-val"><span id="nd-dist">0.0</span> <small style="font-size:9px;color:rgba(0,240,255,.4)">km</small></div></div>
+      <div class="nd-box"><div class="nd-lbl">KURS</div><div class="nd-val"><span id="nd-hdg">—</span>°</div></div>
+    </div>
+    <div id="nav-target">
+      <span>📍</span>
+      <span>Route: <b id="nt-txt">Freie Fahrt — GPS trackt Strecke</b></span>
+    </div>
+  </div>
+
+  <!-- PAGE: SYSTEM -->
+  <div class="page" id="pg-sys">
+    <div class="pnl">
+      <div class="pnl-t"><span class="pnl-ico">⚙️</span>SYSTEM</div>
+      <div class="pnl-body">
+        <div class="s-row"><span class="s-k">GPS</span><span class="s-v" id="ss-gps">CHECK…</span></div>
+        <div class="s-row"><span class="s-k">AKKU</span><span class="s-v" id="ss-batt">—</span></div>
+        <div class="s-row"><span class="s-k">KOMPASS</span><span class="s-v" id="ss-comp">—</span></div>
+        <div class="s-row"><span class="s-k">HÖHE</span><span class="s-v" id="ss-alt">—</span></div>
+        <div class="s-row"><span class="s-k">GENAUIGKEIT</span><span class="s-v" id="ss-acc">—</span></div>
+        <div class="s-row"><span class="s-k">BEWEGUNGSSENSOR</span><span class="s-v" id="ss-mot">CHECK…</span></div>
+        <div class="s-row"><span class="s-k">SPRACHERKENNUNG</span><span class="s-v" id="ss-sr">CHECK…</span></div>
+        <div class="s-row"><span class="s-k">PWA MODUS</span><span class="s-v" id="ss-pwa">—</span></div>
+        <div class="s-row"><span class="s-k">DARK WAKE LOCK</span><span class="s-v" id="ss-wl">—</span></div>
+      </div>
+    </div>
+    <div class="pnl">
+      <div class="pnl-t"><span class="pnl-ico">🏁</span>SITZUNG</div>
+      <div class="pnl-body">
+        <div class="s-row"><span class="s-k">MAX SPEED</span><span class="s-v" id="ss-max">0 km/h</span></div>
+        <div class="s-row"><span class="s-k">DISTANZ</span><span class="s-v" id="ss-dist">0.0 km</span></div>
+        <div class="s-row"><span class="s-k">FAHRZEIT</span><span class="s-v" id="ss-time">00:00</span></div>
+        <div class="s-row"><span class="s-k">FAHRSCORE</span><span class="s-v" id="ss-score">100</span></div>
+      </div>
+    </div>
+    <div class="row2">
+      <button class="act-btn" onclick="toggleHUD()">🔲 HUD</button>
+      <button class="act-btn" onclick="resetSession()">🔄 RESET</button>
+      <button class="act-btn" onclick="exportRoute()">💾 ROUTE</button>
+    </div>
+  </div>
+
+  <!-- PAGE: MULTIPLAYER (local sim) -->
+  <div class="page" id="pg-mp">
+    <div class="pnl" style="flex:1;overflow:hidden">
+      <div class="pnl-t"><span class="pnl-ico">🌐</span>LIVE LOBBY</div>
+      <div class="pnl-body" id="mp-list" style="overflow-y:auto"></div>
+    </div>
+    <div class="pnl" style="flex:0 0 auto">
+      <div class="pnl-body">
+        <div class="s-row"><span class="s-k">SPIELER ONLINE</span><span class="s-v ok" id="mp-cnt">4</span></div>
+        <div class="s-row"><span class="s-k">DEINE POSITION</span><span class="s-v" id="mp-rank">#1</span></div>
+        <div class="s-row"><span class="s-k">DEIN SCORE</span><span class="s-v" id="mp-my-sc">100</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div id="nav">
+    <button class="nb on" data-page="dash" onclick="goPage('dash',this)"><span>🚀</span><span>DRIVE</span></button>
+    <button class="nb" data-page="nav" onclick="goPage('nav',this)"><span>🗺</span><span>KARTE</span></button>
+    <button class="nb" onclick="toggleHUD()"><span>🔲</span><span>HUD</span></button>
+    <button class="nb" data-page="sys" onclick="goPage('sys',this)"><span>⚙️</span><span>SYS</span></button>
+    <button class="nb" data-page="mp" onclick="goPage('mp',this)"><span>🌐</span><span>MULTI</span></button>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+'use strict';
+/* ============================================================
+   NEON DRIVE OS v2 — FULLY LOCAL, NO EXTERNAL APIs
+   Works as iPhone PWA (Add to Home Screen)
+   ============================================================ */
+
+// ─── SPLASH ─────────────────────────────────────────────────
+const BOOT_MSGS = ['GPS SENSOR…','BEWEGUNGSSENSOR…','TACHOMETER WebGL…','KOMPASS…','KI ASSISTENT…','FAHRSTIL ANALYSE…','NAVIGATION…','MUSIK ENGINE…','READY.'];
+let bootIdx = 0;
+const spItems = document.getElementById('sp-items');
+const bootTimer = setInterval(() => {
+  if (bootIdx >= BOOT_MSGS.length) { clearInterval(bootTimer); return; }
+  const d = document.createElement('div');
+  d.className = 'sp-item-line';
+  d.textContent = BOOT_MSGS[bootIdx];
+  d.style.animationDelay = bootIdx * 0.18 + 's';
+  spItems.appendChild(d);
+  bootIdx++;
+}, 180);
+
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('out');
+    setTimeout(() => document.getElementById('splash').remove(), 950);
+    toast('NEON DRIVE OS GESTARTET ✓');
+    checkSystems();
+  }, 2600);
+});
+
+// ─── TOAST ──────────────────────────────────────────────────
+function toast(msg, ms = 2400) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  setTimeout(() => t.classList.remove('on'), ms);
+}
+
+// ─── NAVIGATION ─────────────────────────────────────────────
+function goPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
+  document.getElementById('pg-' + id).classList.add('on');
+  if (btn) btn.classList.add('on');
+  if (id === 'nav') { resizeBigMap(); drawBigMap(); }
+}
+
+// ─── TIME ────────────────────────────────────────────────────
+let sessionStart = Date.now();
+function tick() {
+  const d = new Date();
+  const t = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('tb-time').textContent = t;
+  document.getElementById('h-time').textContent = t;
+  const el = document.getElementById('ss-time');
+  if (el) {
+    const s = Math.floor((Date.now() - sessionStart) / 1000);
+    el.textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  }
+}
+setInterval(tick, 1000); tick();
+
+// ─── WAKE LOCK (screen stays on) ────────────────────────────
+let wakeLock = null;
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      document.getElementById('ss-wl').textContent = 'AKTIV ✓';
+      document.getElementById('ss-wl').className = 's-v ok';
+    } else { document.getElementById('ss-wl').textContent = 'N/A'; }
+  } catch { document.getElementById('ss-wl').textContent = 'VERWEIGERT'; }
+}
+document.addEventListener('visibilitychange', async () => {
+  if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
+});
+
+// ─── BATTERY ────────────────────────────────────────────────
+if (navigator.getBattery) {
+  navigator.getBattery().then(b => {
+    const upB = () => {
+      const pct = Math.round(b.level * 100);
+      const ico = b.charging ? '⚡' : pct < 20 ? '🪫' : '🔋';
+      document.getElementById('tb-batt').textContent = ico + pct + '%';
+      const el = document.getElementById('ss-batt');
+      el.textContent = pct + '%' + (b.charging ? ' ⚡' : '');
+      el.className = 's-v ' + (pct > 30 ? 'ok' : pct > 15 ? 'wo' : 'er');
+    };
+    upB();
+    b.addEventListener('levelchange', upB);
+    b.addEventListener('chargingchange', upB);
+  });
+}
+
+// ─── SESSION DATA ────────────────────────────────────────────
+let maxSpd = 0, totalDist = 0, spdSamples = [], lastPos = null, drvScore = 100;
+let tripCount = +localStorage.getItem('nd_tc') || 0;
+document.getElementById('sc-trips').textContent = tripCount;
+
+function resetSession() {
+  sessionStart = Date.now(); maxSpd = 0; totalDist = 0;
+  spdSamples = []; lastPos = null; drvScore = 100; trail = [];
+  tripCount++; localStorage.setItem('nd_tc', tripCount);
+  document.getElementById('sc-trips').textContent = tripCount;
+  ['s-max','s-avg','ss-max'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '0'; });
+  toast('SESSION ZURÜCKGESETZT ↺');
+}
+
+function exportRoute() {
+  const data = JSON.stringify({ trail, maxSpd, totalDist, score: Math.round(drvScore), date: new Date().toISOString() });
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'neondrive_route_' + Date.now() + '.json';
+  a.click(); URL.revokeObjectURL(url);
+  toast('ROUTE GESPEICHERT 💾');
+}
+
+// ─── COMPASS (DeviceOrientation) ────────────────────────────
+let compass = 0;
+const DIR = ['N','NO','O','SO','S','SW','W','NW'];
+function dir(d) { return DIR[Math.round(d/45)%8]; }
+
+function handleOrientation(e) {
+  if (e.alpha == null) return;
+  // iOS: webkitCompassHeading is true north; fallback alpha
+  compass = (e.webkitCompassHeading != null) ? Math.round(e.webkitCompassHeading) : Math.round(360 - e.alpha);
+  document.getElementById('ss-comp').textContent = compass + '° ' + dir(compass);
+  document.getElementById('m-hdg').textContent = compass;
+  document.getElementById('bm-hdg').textContent = compass;
+  document.getElementById('h-hdg').textContent = compass;
+  document.getElementById('nd-hdg').textContent = compass;
+  drawCompass(compass);
+}
+window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+window.addEventListener('deviceorientation', handleOrientation, true);
+
+// iOS 13+ needs permission
+async function requestMotion() {
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const r = await DeviceOrientationEvent.requestPermission();
+      if (r !== 'granted') toast('Kompass: Zugriff verweigert');
+    } catch {}
+  }
+  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    try { await DeviceMotionEvent.requestPermission(); } catch {}
+  }
+}
+document.getElementById('mic-btn').addEventListener('click', () => {}, { once: true });
+window.addEventListener('touchstart', () => { requestMotion(); requestWakeLock(); }, { once: true });
+
+// ─── ACCELEROMETER / DRIVE STYLE ────────────────────────────
+let prevAy = 0;
+window.addEventListener('devicemotion', e => {
+  document.getElementById('ss-mot').textContent = 'AKTIV ✓';
+  document.getElementById('ss-mot').className = 's-v ok';
+  const a = e.accelerationIncludingGravity; if (!a) return;
+  const G = 9.81;
+  const acG = Math.min(Math.max((a.y - prevAy) / (G * 0.12), 0), 2);
+  const brG = Math.min(Math.max((prevAy - a.y) / (G * 0.12), 0), 2);
+  const ltG = Math.min(Math.abs(a.x || 0) / G, 1.5);
+  prevAy = a.y || 0;
+
+  set('a-val', acG.toFixed(1) + 'g'); setW('a-bar', acG/2*100);
+  set('b-val', brG.toFixed(1) + 'g'); setW('b-bar', brG/2*100);
+  set('l-val', ltG.toFixed(1) + 'g'); setW('l-bar', ltG/1.5*100);
+
+  const pen = acG * 0.4 + brG * 0.7 + ltG * 0.5;
+  drvScore = Math.max(0, Math.min(100, drvScore - pen * 0.015));
+  const sc = Math.round(drvScore);
+  const scoreEl = document.getElementById('drv-score');
+  scoreEl.textContent = sc;
+  scoreEl.style.background = sc > 70 ? 'linear-gradient(135deg,#39ff14,#00f0ff)' :
+    sc > 40 ? 'linear-gradient(135deg,#ffb300,#ff6b00)' : 'linear-gradient(135deg,#ff3636,#ff00e4)';
+  scoreEl.style['-webkit-background-clip'] = 'text';
+  scoreEl.style['-webkit-text-fill-color'] = 'transparent';
+  set('h-score', sc);
+  set('mp-my-sc', sc);
+  set('ss-score', sc);
+});
+
+function set(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
+function setW(id, w) { const el = document.getElementById(id); if (el) el.style.width = Math.min(100, Math.max(0, w)) + '%'; }
+
+// ─── GEOLOCATION ────────────────────────────────────────────
+let curSpd = 0, curLat = 52.52, curLon = 13.405, curAlt = null;
+let trail = [];
+let mapScale = 6000, bigMapScale = 4000;
+
+if (navigator.geolocation) {
+  navigator.geolocation.watchPosition(pos => {
+    const { latitude: lat, longitude: lon, speed, altitude, accuracy } = pos.coords;
+    curLat = lat; curLon = lon; curAlt = altitude;
+    curSpd = speed != null ? Math.round(speed * 3.6) : curSpd;
+
+    updateSpeed(curSpd);
+    document.getElementById('tb-gps').textContent = '📡GPS';
+    document.getElementById('tb-gps').style.color = 'var(--g)';
+    document.getElementById('ss-gps').textContent = 'AKTIV ✓';
+    document.getElementById('ss-gps').className = 's-v ok';
+    document.getElementById('ss-alt').textContent = altitude ? Math.round(altitude) + ' m' : '—';
+    document.getElementById('ss-acc').textContent = accuracy ? Math.round(accuracy) + ' m' : '—';
+    document.getElementById('h-alt').textContent = altitude ? Math.round(altitude) : '—';
+    const coordStr = lat.toFixed(5) + '°N  ' + lon.toFixed(5) + '°E';
+    document.getElementById('m-coords').textContent = coordStr;
+    document.getElementById('bm-coords').textContent = coordStr;
+
+    trail.push([lat, lon]);
+    if (trail.length > 200) trail.shift();
+
+    if (lastPos) {
+      const d = haversine(lastPos[0], lastPos[1], lat, lon);
+      totalDist += d;
+      set('sc-dist', totalDist.toFixed(1));
+      set('ss-dist', totalDist.toFixed(2) + ' km');
+      set('ni-dist', totalDist.toFixed(2) + ' km');
+      set('nd-dist', totalDist.toFixed(1));
+    }
+    lastPos = [lat, lon];
+
+    drawMap(mapC, mctx, mapScale);
+    drawMap(bigMapC, bmctx, bigMapScale);
+    drawTacho(curSpd);
+  }, err => {
+    document.getElementById('ss-gps').textContent = err.code === 1 ? 'VERWEIGERT' : 'FEHLER';
+    document.getElementById('ss-gps').className = 's-v er';
+    document.getElementById('m-coords').textContent = 'Demo-Modus aktiv';
+    startDemoGPS();
+  }, { enableHighAccuracy: true, maximumAge: 500, timeout: 8000 });
+} else {
+  startDemoGPS();
+}
+
+function haversine(la1, lo1, la2, lo2) {
+  const R = 6371, dL = (la2-la1)*Math.PI/180, dO = (lo2-lo1)*Math.PI/180;
+  const a = Math.sin(dL/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dO/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function updateSpeed(spd) {
+  curSpd = spd;
+  set('spd-n', spd); set('m-spd', spd); set('h-spd', spd); set('bm-spd', spd); set('nd-spd', spd);
+  const el = document.getElementById('spd-n');
+  el.className = spd > 130 ? 'd' : spd > 90 ? 'w' : '';
+  if (spd > maxSpd) {
+    maxSpd = spd;
+    set('s-max', maxSpd); set('ss-max', maxSpd + ' km/h'); set('nd-max', maxSpd);
+  }
+  spdSamples.push(spd);
+  if (spdSamples.length > 80) spdSamples.shift();
+  const avg = Math.round(spdSamples.reduce((a,b)=>a+b,0)/spdSamples.length);
+  set('s-avg', avg);
+  set('rpm-n', Math.round(spd * 42));
+  drawTacho(spd);
+}
+
+// ─── DEMO GPS ───────────────────────────────────────────────
+function startDemoGPS() {
+  document.getElementById('ss-gps').textContent = 'DEMO';
+  document.getElementById('ss-gps').className = 's-v wo';
+  let t = 0;
+  setInterval(() => {
+    t += 0.008;
+    const spd = Math.round(50 + Math.sin(t) * 38 + Math.random() * 6);
+    curSpd = Math.max(0, spd);
+    curLat = 52.52 + Math.sin(t * 0.6) * 0.004;
+    curLon = 13.405 + Math.cos(t * 0.6) * 0.005;
+    compass = (compass + 0.4) % 360;
+    updateSpeed(curSpd);
+    drawCompass(compass);
+    set('m-hdg', Math.round(compass));
+    set('bm-hdg', Math.round(compass));
+    trail.push([curLat, curLon]);
+    if (trail.length > 200) trail.shift();
+    const c = curLat.toFixed(5)+'°N '+curLon.toFixed(5)+'°E';
+    set('m-coords', c); set('bm-coords', c);
+    totalDist += 0.008;
+    set('sc-dist', totalDist.toFixed(1));
+    set('ss-dist', totalDist.toFixed(2) + ' km');
+    set('ni-dist', totalDist.toFixed(2) + ' km');
+    set('nd-dist', totalDist.toFixed(1));
+    drawMap(mapC, mctx, mapScale);
+    drawMap(bigMapC, bmctx, bigMapScale);
+  }, 400);
+}
+
+// ─── MAP (Canvas — GPS trail, no external API) ───────────────
+const mapC = document.getElementById('mapC');
+const mctx = mapC.getContext('2d');
+const bigMapC = document.getElementById('bigMapC');
+const bmctx = bigMapC.getContext('2d');
+
+function resizeMapCanvas(c) {
+  c.width = c.offsetWidth * devicePixelRatio;
+  c.height = c.offsetHeight * devicePixelRatio;
+}
+function resizeBigMap() {
+  resizeMapCanvas(bigMapC);
+  drawMap(bigMapC, bmctx, bigMapScale);
+}
+window.addEventListener('resize', () => {
+  resizeMapCanvas(mapC);
+  resizeMapCanvas(bigMapC);
+  drawMap(mapC, mctx, mapScale);
+  drawMap(bigMapC, bmctx, bigMapScale);
+  resizeTacho(); resizeCompass();
+});
+setTimeout(() => {
+  resizeMapCanvas(mapC);
+  resizeMapCanvas(bigMapC);
+  drawMap(mapC, mctx, mapScale);
+}, 100);
+
+function mapZoom(dir) { mapScale = Math.min(80000, Math.max(800, mapScale * (dir > 0 ? 1.5 : 0.67))); drawMap(mapC, mctx, mapScale); }
+function bigMapZoom(dir) { bigMapScale = Math.min(80000, Math.max(800, bigMapScale * (dir > 0 ? 1.5 : 0.67))); drawMap(bigMapC, bmctx, bigMapScale); }
+function centerMap() { drawMap(bigMapC, bmctx, bigMapScale); }
+
+function drawMap(canvas, ctx, scale) {
+  const W = canvas.width, H = canvas.height;
+  if (!W || !H) return;
+  ctx.clearRect(0, 0, W, H);
+  const dpr = devicePixelRatio;
+
+  // Background
+  ctx.fillStyle = 'rgba(0,8,18,.97)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(0,240,255,.06)';
+  ctx.lineWidth = dpr;
+  const gs = 32 * dpr;
+  for (let x = 0; x < W; x += gs) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += gs) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+  const cx = W / 2, cy = H / 2;
+  const refLat = curLat, refLon = curLon;
+
+  // Convert GPS coords → canvas pixels
+  function toXY(lat, lon) {
+    const x = cx + (lon - refLon) * scale * dpr * Math.cos(refLat * Math.PI / 180);
+    const y = cy - (lat - refLat) * scale * dpr;
+    return [x, y];
+  }
+
+  // Trail
+  if (trail.length > 1) {
+    ctx.beginPath();
+    const [x0, y0] = toXY(trail[0][0], trail[0][1]);
+    ctx.moveTo(x0, y0);
+    for (let i = 1; i < trail.length; i++) {
+      const [x, y] = toXY(trail[i][0], trail[i][1]);
+      ctx.lineTo(x, y);
+    }
+    const trailGrad = ctx.createLinearGradient(0, 0, W, 0);
+    trailGrad.addColorStop(0, 'rgba(0,240,255,.12)');
+    trailGrad.addColorStop(1, 'rgba(0,240,255,.7)');
+    ctx.strokeStyle = trailGrad;
+    ctx.lineWidth = 2 * dpr;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+
+  // Current position
+  const pg = ctx.createRadialGradient(cx, cy, 0, cx, cy, 14 * dpr);
+  pg.addColorStop(0, 'rgba(0,240,255,.5)');
+  pg.addColorStop(1, 'transparent');
+  ctx.fillStyle = pg;
+  ctx.beginPath(); ctx.arc(cx, cy, 14 * dpr, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(cx, cy, 4 * dpr, 0, Math.PI * 2); ctx.fill();
+
+  // Heading arrow
+  const headRad = compass * Math.PI / 180;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.sin(headRad) * 22 * dpr, cy - Math.cos(headRad) * 22 * dpr);
+  ctx.strokeStyle = 'rgba(255,179,0,.85)';
+  ctx.lineWidth = 2.5 * dpr;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // Speed rings (range circles)
+  for (let i = 1; i <= 2; i++) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, i * 60 * dpr, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0,240,255,.05)';
+    ctx.lineWidth = dpr;
+    ctx.setLineDash([4 * dpr, 8 * dpr]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Scale indicator
+  const km = (1 / (scale * dpr / W) * 111).toFixed(1);
+  ctx.fillStyle = 'rgba(0,240,255,.3)';
+  ctx.font = `${10 * dpr}px monospace`;
+  ctx.fillText('~' + km + ' km visible', 8 * dpr, H - 8 * dpr);
+}
+
+// ─── 3D TACHOMETER (Canvas WebGL-style) ─────────────────────
+const tachoC = document.getElementById('tachoC');
+const ttx = tachoC.getContext('2d');
+
+function resizeTacho() {
+  const wrap = document.getElementById('tacho-wrap');
+  const sz = Math.min(wrap.offsetWidth || 160, wrap.offsetHeight || 160);
+  const s = sz * devicePixelRatio;
+  tachoC.width = s; tachoC.height = s;
+  tachoC.style.width = sz + 'px'; tachoC.style.height = sz + 'px';
+  drawTacho(curSpd);
+}
+
+function drawTacho(spd) {
+  const C = tachoC, ctx = ttx;
+  const W = C.width, cx = W/2, cy = W/2, r = W*.44;
+  ctx.clearRect(0, 0, W, W);
+  const maxV = 220, ratio = Math.min(spd / maxV, 1);
+  const SA = Math.PI * .75, EA = Math.PI * 2.25;
+  const CA = SA + ratio * (EA - SA);
+
+  // Outer glow
+  const og = ctx.createRadialGradient(cx, cy, r*.6, cx, cy, r*1.1);
+  og.addColorStop(0, 'transparent'); og.addColorStop(1, 'rgba(0,240,255,.1)');
+  ctx.fillStyle = og; ctx.beginPath(); ctx.arc(cx,cy,r*1.05,0,Math.PI*2); ctx.fill();
+
+  // Track
+  ctx.beginPath(); ctx.arc(cx,cy,r,SA,EA);
+  ctx.strokeStyle='rgba(0,240,255,.09)'; ctx.lineWidth=W*.042; ctx.lineCap='round'; ctx.stroke();
+
+  // Danger zone (last 20%)
+  const dangerStart = SA + (EA-SA)*.8;
+  ctx.beginPath(); ctx.arc(cx,cy,r,dangerStart,EA);
+  ctx.strokeStyle='rgba(255,54,54,.15)'; ctx.lineWidth=W*.042; ctx.stroke();
+
+  // Active arc
+  if (ratio > 0) {
+    const arcG = ctx.createLinearGradient(cx-r,cy,cx+r,cy);
+    arcG.addColorStop(0,'#00f0ff'); arcG.addColorStop(.65,'#9933ff'); arcG.addColorStop(1,'#ff00e4');
+    ctx.beginPath(); ctx.arc(cx,cy,r,SA,CA);
+    ctx.strokeStyle=arcG; ctx.lineWidth=W*.042; ctx.lineCap='round';
+    ctx.shadowColor='#00f0ff'; ctx.shadowBlur=W*.045; ctx.stroke(); ctx.shadowBlur=0;
+  }
+
+  // Ticks
+  for (let i=0; i<=11; i++) {
+    const a = SA + (i/11)*(EA-SA);
+    const isMaj = i%2===0;
+    const r1=r*(isMaj?.81:.88), r2=r*.97;
+    ctx.beginPath();
+    ctx.moveTo(cx+r1*Math.cos(a), cy+r1*Math.sin(a));
+    ctx.lineTo(cx+r2*Math.cos(a), cy+r2*Math.sin(a));
+    ctx.strokeStyle = (i/11 <= ratio) ? 'rgba(0,240,255,.85)' : 'rgba(0,240,255,.18)';
+    ctx.lineWidth = isMaj ? W*.02 : W*.009; ctx.lineCap='round'; ctx.stroke();
+    if (isMaj) {
+      const lbl = Math.round(i/11*maxV/10)*10;
+      const tx=cx+(r*.68)*Math.cos(a), ty=cy+(r*.68)*Math.sin(a);
+      ctx.fillStyle='rgba(0,240,255,.4)';
+      ctx.font=`bold ${W*.065}px 'Share Tech Mono'`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(lbl, tx, ty);
+    }
+  }
+
+  // Needle
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(CA);
+  const nG=ctx.createLinearGradient(-r*.08,0,r*.74,0);
+  nG.addColorStop(0,'rgba(255,255,255,.05)'); nG.addColorStop(1,'#ffffff');
+  ctx.beginPath(); ctx.moveTo(-r*.08,0); ctx.lineTo(r*.74,0);
+  ctx.strokeStyle=nG; ctx.lineWidth=W*.024; ctx.lineCap='round';
+  ctx.shadowColor='#fff'; ctx.shadowBlur=W*.04; ctx.stroke(); ctx.restore(); ctx.shadowBlur=0;
+
+  // Center pin
+  const cpg=ctx.createRadialGradient(cx,cy,0,cx,cy,W*.055);
+  cpg.addColorStop(0,'#ffffff'); cpg.addColorStop(1,'#00f0ff');
+  ctx.fillStyle=cpg; ctx.beginPath(); ctx.arc(cx,cy,W*.055,0,Math.PI*2); ctx.fill();
+
+  // 3D inner ring
+  const rig=ctx.createLinearGradient(cx-r*.3,cy-r*.3,cx+r*.3,cy+r*.3);
+  rig.addColorStop(0,'rgba(0,240,255,.18)'); rig.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.strokeStyle=rig; ctx.lineWidth=W*.015;
+  ctx.beginPath(); ctx.arc(cx,cy,r*.32,0,Math.PI*2); ctx.stroke();
+}
+
+setTimeout(resizeTacho, 120);
+
+// ─── COMPASS (Canvas) ────────────────────────────────────────
+const cmpC = document.getElementById('cmpC');
+const cctx = cmpC.getContext('2d');
+
+function resizeCompass() {
+  const wrap = document.getElementById('cmp-wrap');
+  const sz = Math.min(wrap.offsetWidth || 160, wrap.offsetHeight || 160);
+  const s = sz * devicePixelRatio;
+  cmpC.width = s; cmpC.height = s;
+  cmpC.style.width = sz + 'px'; cmpC.style.height = sz + 'px';
+  drawCompass(compass);
+}
+
+function drawCompass(deg) {
+  const C = cmpC, ctx = cctx;
+  const W = C.width, cx = W/2, cy = W/2, r = W*.43;
+  ctx.clearRect(0, 0, W, W);
+  const rad = deg * Math.PI / 180;
+
+  // Outer ring
+  const rg = ctx.createLinearGradient(cx-r,cy,cx+r,cy);
+  rg.addColorStop(0,'rgba(0,240,255,.08)'); rg.addColorStop(.5,'rgba(0,240,255,.22)'); rg.addColorStop(1,'rgba(0,240,255,.08)');
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.strokeStyle=rg; ctx.lineWidth=W*.028; ctx.stroke();
+
+  // Tick marks
+  for (let i=0; i<36; i++) {
+    const a=(i*10*Math.PI/180)-rad;
+    const isMaj=i%9===0;
+    const r1=r*(isMaj?.82:.9);
+    ctx.beginPath();
+    ctx.moveTo(cx+r1*Math.cos(a-Math.PI/2), cy+r1*Math.sin(a-Math.PI/2));
+    ctx.lineTo(cx+r*Math.cos(a-Math.PI/2), cy+r*Math.sin(a-Math.PI/2));
+    ctx.strokeStyle='rgba(0,240,255,.28)'; ctx.lineWidth=isMaj?W*.016:W*.007; ctx.stroke();
+  }
+
+  // Cardinals
+  ['N','O','S','W'].forEach((lbl,i) => {
+    const a=(i*Math.PI/2)-rad;
+    const x=cx+(r*.68)*Math.cos(a-Math.PI/2), y=cy+(r*.68)*Math.sin(a-Math.PI/2);
+    ctx.fillStyle=lbl==='N'?'#ff3636':'rgba(0,240,255,.7)';
+    ctx.font=`bold ${W*.1}px 'Orbitron'`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.shadowColor=lbl==='N'?'#ff3636':'#00f0ff'; ctx.shadowBlur=W*.025;
+    ctx.fillText(lbl,x,y); ctx.shadowBlur=0;
+  });
+
+  // N needle
+  ctx.beginPath();
+  ctx.moveTo(cx,cy);
+  ctx.lineTo(cx+r*.52*Math.cos(-Math.PI/2-rad), cy+r*.52*Math.sin(-Math.PI/2-rad));
+  ctx.strokeStyle='#ff3636'; ctx.lineWidth=W*.026; ctx.lineCap='round';
+  ctx.shadowColor='#ff3636'; ctx.shadowBlur=W*.035; ctx.stroke(); ctx.shadowBlur=0;
+
+  // S needle
+  ctx.beginPath();
+  ctx.moveTo(cx,cy);
+  ctx.lineTo(cx+r*.38*Math.cos(Math.PI/2-rad), cy+r*.38*Math.sin(Math.PI/2-rad));
+  ctx.strokeStyle='rgba(0,240,255,.45)'; ctx.lineWidth=W*.018; ctx.lineCap='round'; ctx.stroke();
+
+  // Center
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(cx,cy,W*.038,0,Math.PI*2); ctx.fill();
+
+  // Degree readout
+  ctx.fillStyle='rgba(0,240,255,.6)';
+  ctx.font=`bold ${W*.082}px 'Share Tech Mono'`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(Math.round(deg)+'°', cx, cy+r*.38);
+}
+
+setTimeout(resizeCompass, 120);
+
+// ─── MUSIC ENGINE (local files + demo) ──────────────────────
+let audioCtx = null, audioSrc = null, gainNode = null;
+let playlist = [], playIdx = 0, playing = false;
+let demoPaused = false, demoTrackIdx = 0;
+
+const DEMO_TRACKS = [
+  { title: 'Cyberpunk Synthwave', artist: 'Demo Track 1', dur: 245 },
+  { title: 'Neon Nights Drive', artist: 'Demo Track 2', dur: 312 },
+  { title: 'Blade Runner 2049', artist: 'Demo Track 3', dur: 198 },
+  { title: 'Midnight Racer', artist: 'Demo Track 4', dur: 267 },
+];
+let demoPos = 0, demoTimer = null;
+
+function loadAudio(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  playlist = files.map(f => ({ title: f.name.replace(/\.[^.]+$/, ''), artist: 'Lokal', file: f }));
+  playIdx = 0;
+  playTrack(0);
+  toast('🎵 ' + playlist.length + ' TITEL GELADEN');
+}
+
+function playTrack(idx) {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioSrc) { audioSrc.disconnect(); }
+  if (gainNode) gainNode.disconnect();
+
+  const track = playlist[idx];
+  const reader = new FileReader();
+  reader.onload = e => {
+    audioCtx.decodeAudioData(e.target.result, buf => {
+      gainNode = audioCtx.createGain();
+      gainNode.gain.value = document.querySelector('.vol-row input') ? document.querySelector('.vol-row input').value / 100 : 0.7;
+      audioSrc = audioCtx.createBufferSource();
+      audioSrc.buffer = buf;
+      audioSrc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      audioSrc.start(0);
+      playing = true;
+      audioSrc.onended = () => { if (playlist.length > 1) playTrack((playIdx + 1) % playlist.length); };
+      renderMusicUI(track.title, track.artist, buf.duration, 0, true);
+      startMusicProgress(buf.duration);
+    });
+  };
+  reader.readAsArrayBuffer(track.file);
+}
+
+let progTimer = null, progPos = 0, progDur = 1;
+function startMusicProgress(dur) {
+  progDur = dur; progPos = 0;
+  clearInterval(progTimer);
+  progTimer = setInterval(() => {
+    progPos += 1;
+    if (progPos > progDur) { clearInterval(progTimer); return; }
+    const el = document.querySelector('.mus-bar');
+    if (el) el.style.width = (progPos/progDur*100) + '%';
+    const tEl = document.querySelector('.mus-time');
+    if (tEl) {
+      tEl.children[0].textContent = fmt(progPos);
+      tEl.children[1].textContent = fmt(progDur);
+    }
+  }, 1000);
+}
+
+function startDemoMusic() {
+  clearInterval(demoTimer);
+  const t = DEMO_TRACKS[demoTrackIdx % DEMO_TRACKS.length];
+  demoPos = 0; demoPaused = false;
+  renderMusicUI(t.title, t.artist, t.dur, 0, true);
+  demoTimer = setInterval(() => {
+    if (demoPaused) return;
+    demoPos += 1;
+    if (demoPos >= t.dur) {
+      demoTrackIdx++;
+      const nt = DEMO_TRACKS[demoTrackIdx % DEMO_TRACKS.length];
+      demoPos = 0;
+      renderMusicUI(nt.title, nt.artist, nt.dur, 0, true);
+    } else {
+      const el = document.querySelector('.mus-bar');
+      if (el) el.style.width = (demoPos/t.dur*100) + '%';
+      const tEl = document.querySelector('.mus-time');
+      if (tEl) { tEl.children[0].textContent = fmt(demoPos); tEl.children[1].textContent = fmt(t.dur); }
+    }
+  }, 1000);
+}
+
+function fmt(s) { return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.round(s)%60).padStart(2,'0')}`; }
+
+function renderMusicUI(title, artist, dur, pos, isPlaying) {
+  document.getElementById('mus-body').innerHTML = `
+    <div class="mus-track" title="${title}">${title}</div>
+    <div class="mus-art">${artist}</div>
+    <div class="mus-prog"><div class="mus-bar" style="width:${pos/dur*100}%"></div></div>
+    <div class="mus-time"><span>${fmt(pos)}</span><span>${fmt(dur)}</span></div>
+    <div class="mus-ctrl">
+      <button class="m-btn" onclick="musicCmd('prev')">⏮</button>
+      <button class="m-btn big" id="play-btn" onclick="musicCmd('play')">${isPlaying ? '⏸' : '▶'}</button>
+      <button class="m-btn" onclick="musicCmd('next')">⏭</button>
+    </div>
+    <div class="vol-row"><span>🔈</span><input type="range" min="0" max="100" value="70" oninput="setVol(this.value)"><span>🔊</span></div>
+    <button id="mus-file-btn" onclick="document.getElementById('mus-file-input').click()" style="font-size:8px;padding:3px 8px">📁 DATEIEN</button>
+    <input id="mus-file-input" type="file" accept="audio/*" multiple onchange="loadAudio(this)" style="display:none">
+  `;
+}
+
+function musicCmd(cmd) {
+  if (playlist.length > 0) {
+    if (cmd === 'next') { playIdx = (playIdx + 1) % playlist.length; playTrack(playIdx); }
+    else if (cmd === 'prev') { playIdx = (playIdx - 1 + playlist.length) % playlist.length; playTrack(playIdx); }
+    else if (cmd === 'play') {
+      if (audioCtx) {
+        if (playing) { audioCtx.suspend(); playing = false; } else { audioCtx.resume(); playing = true; }
+        const pb = document.getElementById('play-btn'); if (pb) pb.textContent = playing ? '⏸' : '▶';
+      }
+    }
+  } else {
+    if (cmd === 'next') { demoTrackIdx++; startDemoMusic(); }
+    else if (cmd === 'prev') { demoTrackIdx = Math.max(0, demoTrackIdx - 1); startDemoMusic(); }
+    else if (cmd === 'play') { demoPaused = !demoPaused; const pb = document.getElementById('play-btn'); if (pb) pb.textContent = demoPaused ? '▶' : '⏸'; }
+  }
+}
+
+function setVol(v) { if (gainNode) gainNode.gain.value = v / 100; }
+
+// ─── AI VOICE ASSISTANT ──────────────────────────────────────
+let micOn = false, recog = null;
+
+document.getElementById('ss-sr').textContent =
+  ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) ? 'VERFÜGBAR ✓' : 'N/A';
+document.getElementById('ss-sr').className =
+  ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) ? 's-v ok' : 's-v wo';
+
+const CMDS = [
+  [['hey drive','hallo drive'], 'Hallo! Ich bin dein Fahrassistent. Was brauchst du?'],
+  [['nächster','weiter','skip'], () => { musicCmd('next'); return 'Nächster Titel läuft.'; }],
+  [['vorheriger','zurück'], () => { musicCmd('prev'); return 'Vorheriger Titel.'; }],
+  [['pause','stop musik'], () => { musicCmd('play'); return 'Pause.'; }],
+  [['hud','frontscheibe'], () => { toggleHUD(); return 'HUD wird angezeigt.'; }],
+  [['score','fahrstil'], () => `Dein Fahrscore: ${Math.round(drvScore)} Punkte.`],
+  [['speed','geschwindigkeit','tempo'], () => `Aktuelle Geschwindigkeit: ${curSpd} km/h.`],
+  [['maximum','max speed'], () => `Maximale Geschwindigkeit: ${maxSpd} km/h.`],
+  [['distanz','strecke'], () => `Gefahrene Strecke: ${totalDist.toFixed(1)} km.`],
+  [['karte','navigation','nav'], () => { goPage('nav', null); return 'Karte geöffnet.'; }],
+  [['reset','neustart'], () => { resetSession(); return 'Session zurückgesetzt.'; }],
+  [['kompass','richtung','kurs'], () => `Aktueller Kurs: ${compass}° ${dir(compass)}.`],
+  [['system'], () => { goPage('sys', null); return 'System-Info geöffnet.'; }],
+  [['hilfe','befehle'], 'Befehle: Hey Drive, Nächster, Pause, HUD, Speed, Score, Distanz, Karte, System, Reset, Kompass.'],
+];
+
+function toggleMic() {
+  const btn = document.getElementById('mic-btn');
+  const wave = document.getElementById('wave');
+  if (micOn) {
+    micOn = false; btn.classList.remove('on'); wave.classList.remove('on');
+    set('ai-stat', 'BEREIT'); if (recog) recog.stop(); return;
+  }
+  // iOS: need user gesture + permission
+  requestMotion();
+  micOn = true; btn.classList.add('on'); wave.classList.add('on');
+  set('ai-stat', 'HÖRE ZU…');
+  set('ai-resp', 'Ich höre…');
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR) {
+    recog = new SR();
+    recog.lang = 'de-DE'; recog.interimResults = false; recog.maxAlternatives = 1;
+    recog.onresult = e => processCmd(e.results[0][0].transcript.toLowerCase());
+    recog.onerror = e => { set('ai-stat', 'FEHLER: ' + e.error); micOff(); };
+    recog.onend = () => micOff();
+    try { recog.start(); } catch { micOff(); }
+  } else {
+    setTimeout(() => processCmd('hey drive'), 1500);
+  }
+}
+
+function micOff() {
+  micOn = false;
+  document.getElementById('mic-btn').classList.remove('on');
+  document.getElementById('wave').classList.remove('on');
+  set('ai-stat', 'BEREIT');
+}
+
+function processCmd(text) {
+  set('ai-stat', 'VERARBEITE…');
+  let reply = 'Ich habe dich nicht verstanden. Sag "Hilfe" für alle Befehle.';
+  for (const [keys, resp] of CMDS) {
+    if (keys.some(k => text.includes(k))) {
+      reply = typeof resp === 'function' ? resp() : resp;
+      break;
+    }
+  }
+  setTimeout(() => {
+    set('ai-resp', reply);
+    set('ai-stat', '● ANTWORT');
+    speak(reply);
+    setTimeout(() => { set('ai-stat', 'BEREIT'); }, 3500);
+  }, 350);
+}
+
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'de-DE'; utt.rate = 1.05; utt.pitch = 1.0;
+  const voices = speechSynthesis.getVoices();
+  const deVoice = voices.find(v => v.lang.startsWith('de'));
+  if (deVoice) utt.voice = deVoice;
+  speechSynthesis.speak(utt);
+}
+
+// ─── HUD WINDSHIELD ──────────────────────────────────────────
+function toggleHUD() {
+  const hud = document.getElementById('hud');
+  hud.classList.toggle('on');
+  if (hud.classList.contains('on')) toast('HUD AKTIV — TIPPE ✕ ZUM SCHLIESSEN');
+  const arr = ['↑','↗','→','↘','↓','↙','←','↖'];
+  document.getElementById('h-arr').textContent = arr[Math.round(compass/45)%8];
+}
+
+// ─── MULTIPLAYER (local simulation) ─────────────────────────
+const MP = [
+  { n:'RAZOR_X99', spd:85, sc:94, km:12.4, col:'#00f0ff' },
+  { n:'NEON_GHOST', spd:71, sc:88, km:10.1, col:'#ff00e4' },
+  { n:'DRIFT_KING', spd:63, sc:76, km:8.7, col:'#ffb300' },
+  { n:'V3L0CITY', spd:50, sc:91, km:6.2, col:'#39ff14' },
+];
+MP[0].spd = curSpd || 50;
+
+function renderMP() {
+  MP[0].spd = curSpd;
+  MP[0].sc = Math.round(drvScore);
+  MP[0].km = totalDist;
+  MP.slice(1).forEach(p => {
+    p.spd = Math.max(5, Math.min(150, p.spd + Math.floor(Math.random()*7-3)));
+    p.km += p.spd / 3600 * .4;
+  });
+  const sorted = [...MP].sort((a,b) => b.spd - a.spd);
+  document.getElementById('mp-list').innerHTML = sorted.map((p,i) => `
+    <div class="mp-row">
+      <div class="mp-av" style="background:${p.col}">${p.n[0]}</div>
+      <div style="flex:1;min-width:0">
+        <div class="mp-n">${p.n}${p.n==='RAZOR_X99'?' ⭐':''}</div>
+        <div class="mp-s">${Math.round(p.spd)} km/h · ${p.km.toFixed(1)} km · Score ${p.sc}</div>
+      </div>
+      <div class="mp-rk" style="background:rgba(0,0,0,.5);border:1px solid ${p.col};color:${p.col}">#${i+1}</div>
+    </div>`).join('');
+  const myRank = sorted.findIndex(p => p.n === 'RAZOR_X99') + 1;
+  set('mp-rank', '#' + myRank);
+  set('mp-cnt', MP.length);
+}
+setInterval(renderMP, 1800); renderMP();
+
+// ─── SYSTEM CHECK ────────────────────────────────────────────
+function checkSystems() {
+  // PWA
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches || !!navigator.standalone;
+  document.getElementById('ss-pwa').textContent = isPWA ? 'STANDALONE ✓' : 'BROWSER (Homescreen empfohlen)';
+  document.getElementById('ss-pwa').className = 's-v ' + (isPWA ? 'ok' : 'wo');
+  // GPS check
+  if (!navigator.geolocation) {
+    document.getElementById('ss-gps').textContent = 'NICHT VERFÜGBAR';
+    document.getElementById('ss-gps').className = 's-v er';
+  }
+}
+
+// ─── SIZE ALL CANVASES ON FIRST RENDER ───────────────────────
+function initSizes() {
+  // Tacho: make square based on wrapper
+  const tw = document.getElementById('tacho-wrap');
+  const cw = document.getElementById('cmp-wrap');
+  const size = Math.min(window.innerWidth * 0.28, 160);
+  [tw, cw].forEach(w => { w.style.width = size+'px'; w.style.height = size+'px'; });
+  resizeTacho(); resizeCompass();
+  resizeMapCanvas(mapC);
+}
+window.addEventListener('resize', initSizes);
+setTimeout(initSizes, 200);
+</script>
 </body>
 </html>
